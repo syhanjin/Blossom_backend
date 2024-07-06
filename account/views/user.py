@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
-
+from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet as BaseUserViewSet
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from account.conf import settings
 
+User = get_user_model()
 
 class UserViewSet(BaseUserViewSet):
     """
@@ -45,3 +49,12 @@ class UserViewSet(BaseUserViewSet):
                 return settings.serializers.user_all
             return settings.serializers.user_private
         raise NotImplementedError(f"Action {self.action} 未实现！")
+
+    @action(detail=False, methods=["get"])
+    def has_nickname(self, request, *args, **kwargs):
+        nickname = request.query_params.get("nickname", None)
+        if not nickname:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "未提供nickname"})
+        has_nickname = User.objects.filter(nickname=nickname).exists()
+        return Response(data={"has_nickname": has_nickname})
+
