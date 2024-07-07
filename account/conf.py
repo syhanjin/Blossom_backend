@@ -37,6 +37,7 @@ default_settings = {
             "user_public": serializer("user.UserPublicSerializer"),
             "user_private": serializer("user.UserPrivateSerializer"),
             "user_all": serializer("user.UserAllSerializer"),
+            "user_set": serializer("user.UserSetSerializer"),
             # 用户身份数据序列化器
             "role_student_public": serializer("user.RoleStudentPublicSerializer"),
             "role_teacher_public": serializer("user.RoleTeacherPublicSerializer"),

@@ -2,6 +2,7 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
 from account.conf import settings
@@ -120,3 +121,20 @@ class UserAllSerializer(serializers.ModelSerializer, RoleMixin):
             RoleStudentAllSerializer,
             RoleTeacherAllSerializer,
         )
+
+class UserSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = User.EDITABLE_FIELDS
+
+    nickname = serializers.CharField(required=False, max_length=64)
+
+    phone = PhoneNumberField(required=False, region="CN", allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    QQ = serializers.CharField(required=False, allow_blank=True, max_length=14)
+    WeChat = serializers.CharField(required=False, allow_blank=True, max_length=64)
+
+    # phone = PhoneNumberField(verbose_name="手机号码", region="CN", null=True)
+    # email = models.EmailField(verbose_name="邮箱", null=True)
+    # QQ = models.CharField("QQ", max_length=14, null=True)
+    # WeChat = models.CharField("微信", max_length=64, null=True)

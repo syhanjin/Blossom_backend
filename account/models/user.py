@@ -106,7 +106,6 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
     # TODO: 去向统计
 
     # 班级关联信息，从班级关联用户
-
     objects = UserManager()
 
     REQUIRED_FIELDS = []
@@ -125,6 +124,9 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
     ALL_FIELDS = PUBLIC_FIELDS + [
         "name", "gender", "birthday", "photo",  # 身份信息
         "phone", "email", "QQ", "WeChat",  # 联系方式
+    ]
+    EDITABLE_FIELDS = [ # 在PC端设置界面可被修改的值，关于图片问题，令设api
+        "nickname", "gender", "birthday", "phone", "email", "QQ", "WeChat",
     ]
     USERNAME_FIELD = "nickname"
 

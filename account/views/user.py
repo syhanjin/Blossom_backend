@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from account.conf import settings
+from account.permissions import CurrentUserOrAdmin
 
 User = get_user_model()
 
@@ -36,6 +37,11 @@ class UserViewSet(BaseUserViewSet):
     def get_permissions(self):
         # if self.action == 'list':
         #     self.permission_classes = settings.
+        # if self.action == 'me':
+        #     self.permission_classes = [CurrentUserOrAdmin]
+        if self.action == 'set':
+            self.permission_classes = [CurrentUserOrAdmin]
+
         return super(BaseUserViewSet, self).get_permissions()
 
     def get_serializer_class(self):
@@ -48,6 +54,8 @@ class UserViewSet(BaseUserViewSet):
             if self.request.user.pk == obj.pk:
                 return settings.serializers.user_all
             return settings.serializers.user_private
+        elif self.action == "set":
+            return settings.serializers.user_set
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     @action(detail=False, methods=["get"])
@@ -57,4 +65,22 @@ class UserViewSet(BaseUserViewSet):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "未提供nickname"})
         has_nickname = User.objects.filter(nickname=nickname).exists()
         return Response(data={"has_nickname": has_nickname})
+
+    @action(methods=["post"], detail=True)
+    def set(self, request, *args, **kwargs):
+        data = request.data
+        nickname = data.pop("nickname", None)
+        # get_object已经被覆写了
+        obj = super(BaseUserViewSet, self).get_object()
+        if obj.nickname != nickname:
+            if User.objects.filter(nickname=nickname).exists():
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"nickname": ["昵称已被使用"]})
+            data['nickname'] = nickname
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(
+            instance=self.get_object(),
+            validated_data=serializer.validated_data
+        )
+        return Response(data=serializer.data)
 

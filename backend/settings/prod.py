@@ -241,6 +241,7 @@ default_settings = {
     ),
 }
 """
+
 DJOSER = {
     "LOGIN_FIELD": "id",
     "SERIALIZERS": {
@@ -252,6 +253,7 @@ DJOSER = {
         "set_username": ["account.permissions.CurrentUserOrAdmin"],
         "user_delete": ["account.permissions.CurrentUserOrAdmin"],
         # "user": ["account.permissions.CurrentUserOrAdmin"],
+        # 此处只需要验证同一班级即可，因为会使用不同的序列化器，其次就是me只会获取自己的信息
         "user": ["account.permissions.OnSameClassOrAdmin"],
         "user_list": ["account.permissions.CurrentUserOrAdmin"],
         "token_destroy": ["rest_framework.permissions.IsAuthenticated"],
