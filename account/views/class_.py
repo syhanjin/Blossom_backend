@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import warnings
 
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from account.conf import settings
@@ -41,3 +42,16 @@ class ClassViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def officer_type_list(self, request, *args, **kwargs):
+        class_type = request.query_params.get("type")
+        if not class_type:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": ["必须提供type"]})
+        if class_type == settings.choices.class_type.ADMINISTRATIVE:
+            objects = settings.models.class_officer.objects.filter(administrative=True)
+        elif class_type == settings.choices.class_type.WALKING:
+            objects = settings.models.class_officer.objects.filter(walking=True)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": [f"Type {class_type} 不在可选范围内"]})
+        return Response(data=settings.serializers.class_officer(objects, many=True).data)

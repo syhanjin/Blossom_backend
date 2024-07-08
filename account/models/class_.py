@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
 from django.db import models
+from imagekit.models import ProcessedImageField
+from pilkit.processors import ResizeToFill
 
 from account.conf import settings
 from utils import create_uuid
@@ -46,6 +48,12 @@ class Class(models.Model):
         settings.models.user_role_teacher, on_delete=models.SET_NULL, null=True, related_name="managed_classes",
         verbose_name="班主任"
     )
+    # 储存照片
+    # photo = ProcessedImageField(
+    #     verbose_name="班级合照", default=None, null=True, upload_to='class_photo',
+    #     processors=[ResizeToFill(1920, 1080)], format='JPEG',
+    #     options={'quality': 100}
+    # )
     # officers = models.ManyToManyField(
     #
     # )
@@ -71,7 +79,7 @@ class ClassMembership(models.Model):
 
     # 命名不规范，将就一下
     classes = models.ForeignKey(Class, on_delete=models.CASCADE)
-    nickname = models.TextField("外号", max_length=1024, null=True)
+    aka = models.TextField("外号", max_length=1024, null=True)  # also known as
 
     joined = models.DateTimeField("加入时间", null=True, default=None)
     exited = models.DateTimeField("离开时间", null=True, default=None)
@@ -94,7 +102,7 @@ class ClassStudent(ClassMembership):
     number = models.PositiveSmallIntegerField("学号", null=True)
 
     SIMPLE_FIELDS = [
-        "number", "rank", "position", "nickname"
+        "number", "rank", "position", "aka"
     ]
 
 
@@ -105,13 +113,18 @@ class ClassTeacher(ClassMembership):
         ]
 
     user_role = models.ForeignKey("account.RoleTeacher", on_delete=models.CASCADE)
-    SIMPLE_FIELDS = ["nickname"]
+    SIMPLE_FIELDS = ["aka"]
 
 
 class ClassOfficer(models.Model):
     """
     记录班级职务名称，用户通过外键关联职务
     """
+    class Meta:
+        ordering = ["order"]
     name = models.CharField(max_length=64, primary_key=True)
     administrative = models.BooleanField()
     walking = models.BooleanField()
+    # 名字暂定，标记优先顺序
+    order = models.PositiveSmallIntegerField(default=50000)
+

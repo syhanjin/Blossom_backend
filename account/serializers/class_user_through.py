@@ -14,3 +14,9 @@ class ClassTeacherSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = settings.models.class_teacher
         fields = settings.models.class_teacher.SIMPLE_FIELDS
+
+
+class ClassOfficerTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = settings.models.class_officer
+        fields = ["name", "order"]
