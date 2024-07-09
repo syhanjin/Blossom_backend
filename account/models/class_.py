@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
 from django.db import models
-from imagekit.models import ProcessedImageField
+from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
 from account.conf import settings
@@ -49,14 +49,15 @@ class Class(models.Model):
         verbose_name="班主任"
     )
     # 储存照片
-    # photo = ProcessedImageField(
-    #     verbose_name="班级合照", default=None, null=True, upload_to='class_photo',
-    #     processors=[ResizeToFill(1920, 1080)], format='JPEG',
-    #     options={'quality': 100}
-    # )
-    # officers = models.ManyToManyField(
-    #
-    # )
+    photo = ProcessedImageField(
+        verbose_name="班级合照", default=None, null=True, upload_to='class_photo',
+        format='JPEG', options={'quality': 100}
+    )
+    photo_preview = ImageSpecField(
+        source='photo', processors=[ResizeToFill(1200, 800)], format='JPEG', options={'quality': 80}
+    )
+
+    photo_desc = models.TextField("班级合照人员说明", blank=True, null=True, default=None)
 
     PUBLIC_SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",
@@ -67,7 +68,8 @@ class Class(models.Model):
         "description"
     ]
     ALL_FIELDS = PUBLIC_FIELDS + [
-        "students", "teachers"
+        "students", "teachers",
+        "photo", "photo_preview", "photo_desc",
     ]
 
     objects = ClassManager()
@@ -120,11 +122,12 @@ class ClassOfficer(models.Model):
     """
     记录班级职务名称，用户通过外键关联职务
     """
+
     class Meta:
         ordering = ["order"]
+
     name = models.CharField(max_length=64, primary_key=True)
     administrative = models.BooleanField()
     walking = models.BooleanField()
     # 名字暂定，标记优先顺序
     order = models.PositiveSmallIntegerField(default=50000)
-

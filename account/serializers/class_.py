@@ -28,14 +28,15 @@ def _get_members(role, serializer, through_serializer, **kwargs):
         '''
         ret = []
         for member in members.all():
-            data = serializer(member.user, **kwargs).data
+            # 修复bug，图片路径不是url：附带context
+            data = serializer(member.user, **kwargs, context=self.context).data
             if role == 'students':
                 through = ClassStudent.objects.get(user_role=member, classes=self.instance)
             elif role == 'teachers':
                 through = ClassTeacher.objects.get(user_role=member, classes=self.instance)
             else:
                 raise ValueError()
-            through_data = through_serializer(through).data
+            through_data = through_serializer(through, context=self.context).data
             data.update(through_data)
             ret.append(data)
         return ret
@@ -59,3 +60,4 @@ class ClassAllSerializer(serializers.ModelSerializer):
     get_teachers = _get_members('teachers',
                                 settings.serializers.user_private_simple,
                                 settings.serializers.class_teacher_simple, is_teacher=True)
+    photo_preview = serializers.ImageField()

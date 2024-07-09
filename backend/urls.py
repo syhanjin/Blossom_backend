@@ -36,4 +36,5 @@ urlpatterns += [
 ]
 
 if settings.DEBUG:
+    # TODO: 静态资源访问权限限制！
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

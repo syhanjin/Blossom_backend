@@ -60,6 +60,7 @@ class RoleTeacherAllSerializer(serializers.ModelSerializer):
 
 
 def _get_role(
+        self,
         obj: settings.models.user_role,
         student_model: Any = RoleStudentPublicSerializer,
         teacher_model: Any = RoleTeacherPublicSerializer,
@@ -73,9 +74,9 @@ def _get_role(
     if not hasattr(obj, 'role_student') and not hasattr(obj, 'role_teacher'):
         return None
     if obj.role == settings.choices.user_role.STUDENT:
-        role_data = student_model(obj.role_student).data
+        role_data = student_model(obj.role_student, context=self.context).data
     elif obj.role == settings.choices.user_role.TEACHER:
-        role_data = teacher_model(obj.role_teacher).data
+        role_data = teacher_model(obj.role_teacher, context=self.context).data
     else:
         raise ValueError(f"{obj.role=} 数据异常！")
     # 将身份类型和其他信息结合到一起，保证输出一致
@@ -87,7 +88,7 @@ class RoleMixin(serializers.Serializer):
     role = serializers.SerializerMethodField()
 
     def get_role(self, obj):
-        return _get_role(obj)
+        return _get_role(self, obj)
 
 
 class UserPublicSerializer(serializers.ModelSerializer, RoleMixin):
@@ -117,10 +118,12 @@ class UserAllSerializer(serializers.ModelSerializer, RoleMixin):
 
     def get_role(self, obj):
         return _get_role(
+            self,
             obj,
             RoleStudentAllSerializer,
             RoleTeacherAllSerializer,
         )
+
 
 class UserSetSerializer(serializers.ModelSerializer):
     class Meta:
