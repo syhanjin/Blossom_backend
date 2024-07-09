@@ -19,10 +19,45 @@ class ClassManager(models.Manager):
     def get_queryset(self):
         """
         将统计老师和学生数的过程加到这里（暂定）
+        *bug*
+        这里的统计会发生错误 经过一大坨调试发现 原本生成的Sql语句
+        ------------------------
+        SELECT `account_class`.`id`,
+               `account_class`.`name`,
+               `account_class`.`nickname`,
+               `account_class`.`created`,
+               `account_class`.`type`,
+               `account_class`.`description`,
+               `account_class`.`headteacher_id`,
+               `account_class`.`photo`,
+               `account_class`.`photo_desc`,
+               COUNT(`account_classteacher`.`user_role_id`) AS `teacher_count`,
+               COUNT(`account_classstudent`.`user_role_id`) AS `student_count`
+        FROM `account_class`
+                 LEFT OUTER JOIN `account_classteacher` ON (`account_class`.`id` = `account_classteacher`.`classes_id`)
+                 LEFT OUTER JOIN `account_classstudent` ON (`account_class`.`id` = `account_classstudent`.`classes_id`)
+                 INNER JOIN `account_classstudent` T6 ON (`account_class`.`id` = T6.`classes_id`)
+        WHERE T6.`user_role_id` = 72591729
+        GROUP BY `account_class`.`id`
+        ORDER BY NULL
+        ------------------------
+        会导致 teacher_count 和 student_count 统计错误
+        需要加上 distinct 具体原因未知（）
+        设置 distinct=True 后统计正常，sql语句中
+        ------------------------
+        COUNT(`account_classteacher`.`user_role_id`) AS `teacher_count`,
+        COUNT(`account_classstudent`.`user_role_id`) AS `student_count`
+        ------------------------
+        变为
+        ------------------------
+        COUNT(DISTINCT `account_classteacher`.`user_role_id`) AS `teacher_count`,
+        COUNT(DISTINCT `account_classstudent`.`user_role_id`) AS `student_count`
+        ------------------------
+        问题解决
         """
         return super().get_queryset().annotate(
-            teacher_count=models.Count('teachers'),
-            student_count=models.Count('students'),
+            teacher_count=models.Count('teachers', distinct=True),
+            student_count=models.Count('students', distinct=True),
         )
 
 
