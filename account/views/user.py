@@ -16,6 +16,10 @@ class UserViewSet(BaseUserViewSet):
     直接继承djoser的UserViewSet，改动部分功能和添加特定功能
     """
 
+    # 非常危险！！！！ 可能通过update修改方法！
+    def update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def permission_denied(self, request, **kwargs):
         # if (
         #     settings.HIDE_USERS

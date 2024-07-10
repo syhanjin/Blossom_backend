@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import warnings
 
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -11,7 +11,14 @@ from account.permissions import OnCurrentClassOrAdmin
 from account.serializers.class_ import ClassPublicSimpleSerializer
 
 
-class ClassViewSet(viewsets.ModelViewSet):
+class ClassViewSet(
+    # mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    # mixins.UpdateModelMixin,
+    # mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
     serializer_class = ClassPublicSimpleSerializer
     queryset = Class.objects.all()
     permission_classes = [OnCurrentClassOrAdmin]
