@@ -135,7 +135,7 @@ class ClassStudent(ClassMembership):
     说明：
     区分走班和行政班，职位的选项不同，ClassOfficer的administrative和walking两个健用于区分
     """
-    position = models.ForeignKey('account.ClassOfficer', verbose_name="职位", on_delete=models.SET_NULL, null=True)
+    position = models.ManyToManyField('account.ClassOfficer', verbose_name="职位")
     number = models.PositiveSmallIntegerField("学号", null=True)
 
     SIMPLE_FIELDS = [

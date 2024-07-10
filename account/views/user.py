@@ -10,6 +10,7 @@ from account.permissions import CurrentUserOrAdmin
 
 User = get_user_model()
 
+
 class UserViewSet(BaseUserViewSet):
     """
     直接继承djoser的UserViewSet，改动部分功能和添加特定功能
@@ -83,4 +84,3 @@ class UserViewSet(BaseUserViewSet):
             validated_data=serializer.validated_data
         )
         return Response(data=serializer.data)
-

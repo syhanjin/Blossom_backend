@@ -113,7 +113,7 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
         "id", "nickname", "role", "avatar",
     ]
     PUBLIC_FIELDS = PUBLIC_SIMPLE_FIELDS + [
-        "created",
+        "created", "admin"
     ]
     PRIVATE_SIMPLE_FIELDS = [
         "id", "name", "nickname", "gender", "role", "avatar", "photo"
@@ -125,7 +125,7 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
         "name", "gender", "birthday", "photo",  # 身份信息
         "phone", "email", "QQ", "WeChat",  # 联系方式
     ]
-    EDITABLE_FIELDS = [ # 在PC端设置界面可被修改的值，关于图片问题，令设api
+    EDITABLE_FIELDS = [  # 在PC端设置界面可被修改的值，关于图片问题，令设api
         "nickname", "gender", "birthday", "phone", "email", "QQ", "WeChat",
     ]
     USERNAME_FIELD = "nickname"
@@ -140,19 +140,18 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
         return self.classes.filter(type=account_settings.choices.class_type.WALKING)
 
     def get_classmates(self) -> QuerySet:
-        # querysets = self.classes.prefetch_related("students__user").values_list('user', flat=True).all()
-        # print(querysets)
-        # print(querysets[0])
-        # if isinstance(querysets, QuerySet):
-        #     return querysets
-        # return QuerySet(User).union(*querysets)
-        # classmates = QuerySet(User)
-        # for class_obj in self.classes:
-        #     students = class_obj.students.all()
-        return User.objects.filter(id__in=self.classes.values_list("students", flat=True).all())
+        # 该方案存在bug，只会获取一个用户
+        # return User.objects.filter(id__in=self.classes.values_list("students", flat=True).all())
+        students = QuerySet(RoleStudent)
+        for class_obj in self.classes.all():
+            students = students | class_obj.students.all()
+        return User.objects.filter(pk__in=students.values_list("user", flat=True))
 
     def get_teachers(self):
-        return User.objects.filter(id__in=self.classes.values_list("teachers", flat=True).all())
+        teachers = QuerySet(RoleTeacher)
+        for class_obj in self.classes.all():
+            teachers = teachers | class_obj.teachers.all()
+        return User.objects.filter(pk__in=teachers.values_list("user", flat=True))
 
     @property
     def classes(self) -> QuerySet:
