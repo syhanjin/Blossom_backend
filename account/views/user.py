@@ -63,6 +63,29 @@ class UserViewSet(BaseUserViewSet):
             return settings.serializers.user_set
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
+    @action(["get"], detail=False)
+    def me(self, request, *args, **kwargs):
+        # 覆写掉这个，因为下面这行太诡异了。猜测：每次访问都会重新创建view实例？
+        # self.get_object = self.get_instance
+        # 不是很会用各种method，就不用了不就好了
+        # return self.retrieve(request, *args, **kwargs)
+        # 但是无妨，因为这个本来就要特别对待，在使用retrieve获取数据的时候不会带上中间件
+        user = request.user
+        data = self.get_serializer(user).data
+        for i, v in enumerate(data["role"]["classes"]):
+            if user.role == settings.choices.user_role.STUDENT:
+                data["role"]["classes"][i].update(settings.serializers.class_student_simple(
+                    settings.models.class_student.objects.get(user_role__pk=user.role_student.pk, classes__pk=v["id"]),
+                    context=self.get_serializer_context()
+                ).data)
+            elif user.role == settings.choices.user_role.TEACHER:
+                data["role"]["classes"][i].update(settings.serializers.class_student_simple(
+                    settings.models.class_teacher.objects.get(user_role__pk=user.role_teacher.pk, classes__pk=v["id"]),
+                    context=self.get_serializer_context()
+                ).data)
+
+        return Response(data=data)
+
     @action(detail=False, methods=["get"])
     def has_nickname(self, request, *args, **kwargs):
         nickname = request.query_params.get("nickname", None)
