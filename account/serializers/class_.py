@@ -12,7 +12,7 @@ class ClassPublicSimpleSerializer(serializers.ModelSerializer):
 
     teacher_count = serializers.IntegerField(read_only=True)
     student_count = serializers.IntegerField(read_only=True)
-    headteacher = settings.serializers.user_private_simple(source="headteacher.user")
+    headteacher = settings.serializers.user_private_simple(source="headteacher.user", is_teacher=True)
 
 
 def _get_members(role, serializer, through_serializer, **kwargs):

@@ -62,6 +62,10 @@ class ClassManager(models.Manager):
 
 
 class Class(models.Model):
+    class Meta:
+        # 因为 administrative 刚好就在 walking 前捏
+        ordering = ("type", "-created", "id")
+
     """
     注1：所有班级信息统一与Role关联，因为需要区分老师和学生
     """
@@ -70,6 +74,8 @@ class Class(models.Model):
 
     nickname = models.CharField("班级昵称", max_length=64)  # 可以自己设置
     created = models.PositiveSmallIntegerField("建班年份")
+    graduated = models.PositiveSmallIntegerField("毕业年份", null=True)
+
     type = models.CharField("班级类型", choices=ClassTypeChoice.choices, max_length=15)
     description = models.TextField("班级描述", null=True, blank=True)
     # 班级人员信息
@@ -96,7 +102,7 @@ class Class(models.Model):
 
     PUBLIC_SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",
-        "created", "headteacher",
+        "created", "graduated", "headteacher",
         "teacher_count", "student_count"
     ]
     PUBLIC_FIELDS = PUBLIC_SIMPLE_FIELDS + [
