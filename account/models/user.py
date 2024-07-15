@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import warnings
 
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -60,7 +59,7 @@ class GenderChoices(models.TextChoices):
     female = "female", "女"
 
 
-class User(AbstractBaseUser, PermissionsMixin, models.Model):
+class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         # db_table = "account"
         indexes = [
@@ -69,7 +68,7 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
 
     # 删除一些父类中的字段
     # is_active = None
-    is_superuser = None
+    # is_superuser = None
 
     id = models.CharField("用户id", primary_key=True, default=create_uuid, editable=False, max_length=8)
     created = models.DateTimeField("创建时间", auto_now_add=True, editable=False)
@@ -144,24 +143,36 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
         # return User.objects.filter(id__in=self.classes.values_list("students", flat=True).all())
         students = QuerySet(RoleStudent)
         for class_obj in self.classes.all():
-            students = students | class_obj.students.all()
+            students |= class_obj.students.all()
         return User.objects.filter(pk__in=students.values_list("user", flat=True))
 
     def get_teachers(self):
         teachers = QuerySet(RoleTeacher)
         for class_obj in self.classes.all():
-            teachers = teachers | class_obj.teachers.all()
+            teachers |= class_obj.teachers.all()
         return User.objects.filter(pk__in=teachers.values_list("user", flat=True))
 
     @property
     def classes(self) -> QuerySet:
-        warnings.warn("怕忽略此问题所以留下警告："
-                      "创建老师数据时班主任也要加入任课老师内，"
-                      "因为暂时没有将班主任合并进classes里，会漏", Warning)
-        if self.role == UserRoleChoice.STUDENT:
+        """
+        获取用户所在的班级，这里的班级表示 用户所在的班级 用户管理的班级（班主任）
+        还是不获取被编辑的班级了
+        :return: 班级
+        """
+        # classes = self.edited_classes.all()
+        # if self.role == UserRoleChoice.STUDENT:
+        #     classes |= self.role_student.classes.all()
+        # elif self.role == UserRoleChoice.TEACHER:
+        #     classes |= self.role_teacher.classes.all() | self.role_teacher.managed_classes.all()
+        # else:
+        #     raise ValueError(f"UserRole: {self.role} 不是正确的选项")
+        # return classes.distinct()
+        if self.role is None:
+            return QuerySet(model=account_settings.models.class_)
+        elif self.role == UserRoleChoice.STUDENT:
             return self.role_student.classes.all()
         elif self.role == UserRoleChoice.TEACHER:
-            return self.role_teacher.classes.all()
+            return (self.role_teacher.classes.all() | self.role_teacher.managed_classes.all()).distinct()
 
     @property
     def role_obj(self) -> 'RoleStudent | RoleTeacher | None':
@@ -171,6 +182,14 @@ class User(AbstractBaseUser, PermissionsMixin, models.Model):
             return self.role_teacher
         else:
             return None
+
+    @property
+    def is_staff(self) -> bool:
+        return self.admin >= AdminChoice.NORMAL
+
+    @property
+    def is_superuser(self) -> bool:
+        return self.admin >= AdminChoice.SUPER
 
 
 class Role(models.Model):

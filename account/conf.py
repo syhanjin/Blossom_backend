@@ -25,6 +25,7 @@ default_settings = {
             "user_role": model("user.Role"),
             "user_role_student": model("user.RoleStudent"),
             "user_role_teacher": model("user.RoleTeacher"),
+            "class_": model("class_.Class"),
             "class_student": model("class_.ClassStudent"),
             "class_teacher": model("class_.ClassTeacher"),
             "class_officer": model("class_.ClassOfficer"),

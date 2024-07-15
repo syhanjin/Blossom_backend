@@ -63,6 +63,14 @@ class OnSameClass(IsAuthenticated):
         )
 
 
+class CanEditCurrentClass(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        return (
+                super(CanEditCurrentClass, self).has_object_permission(request, view, obj)
+                and obj.editors.filter(pk=request.user.pk).exists()
+        )
+
+
 class OnCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
@@ -75,10 +83,20 @@ class OnCurrentClass(IsAuthenticated):
         )
 
 
+class ManageCurrentClass(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        return (
+                super(ManageCurrentClass, self).has_object_permission(request, view, obj)
+                and request.user.managed_classes.filter(pk=obj.pk).exists()
+        )
+
+
 CurrentUserOrAdmin = CurrentUser | Admin
 
 StudentOrAdmin = Student | Admin
 TeacherOrAdmin = Teacher | Admin
 
-OnSameClassOrAdmin = OnSameClass | Admin
-OnCurrentClassOrAdmin = OnCurrentClass | Admin
+# 把编辑权限算作管理员权限
+OnSameClassOrAdmin = OnSameClass | Admin | CanEditCurrentClass
+OnCurrentClassOrAdmin = OnCurrentClass | Admin | CanEditCurrentClass
+ManageCurrentClassOrAdmin = ManageCurrentClass | Admin | CanEditCurrentClass

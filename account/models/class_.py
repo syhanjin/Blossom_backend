@@ -4,7 +4,6 @@ from django.db import models
 from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
-from account.conf import settings
 from utils import create_uuid
 
 User = get_user_model()
@@ -71,6 +70,12 @@ class Class(models.Model):
     """
     id = models.CharField("班级id", primary_key=True, default=create_uuid, editable=False, max_length=8)
     name = models.CharField("班级名称", max_length=6)  # 例如：K2111
+    """
+    注2：关于数据如何获得，只能是由班上的同学自己填写，那么班级数据如何填写？
+    一个思路是采用一次性权限代码，管理员给一个代码，用户输入就可以获得暂时的修改权限，这个有点难办哈
+    目前还是使用设置管理员的形式，但是反向关系要与班主任的区分一下
+    """
+    editors = models.ManyToManyField(User, related_name="edited_classes")
 
     nickname = models.CharField("班级昵称", max_length=64)  # 可以自己设置
     created = models.PositiveSmallIntegerField("建班年份")
@@ -86,7 +91,7 @@ class Class(models.Model):
         "account.RoleTeacher", related_name="classes", related_query_name="classes", through="ClassTeacher"
     )
     headteacher = models.ForeignKey(
-        settings.models.user_role_teacher, on_delete=models.SET_NULL, null=True, related_name="managed_classes",
+        "account.RoleTeacher", on_delete=models.SET_NULL, null=True, related_name="managed_classes",
         verbose_name="班主任"
     )
     # 储存照片

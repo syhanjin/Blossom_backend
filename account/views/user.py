@@ -72,17 +72,20 @@ class UserViewSet(BaseUserViewSet):
         # 但是无妨，因为这个本来就要特别对待，在使用retrieve获取数据的时候不会带上中间件
         user = request.user
         data = self.get_serializer(user).data
-        for i, v in enumerate(data["role"]["classes"]):
-            if user.role == settings.choices.user_role.STUDENT:
-                data["role"]["classes"][i].update(settings.serializers.class_student_simple(
-                    settings.models.class_student.objects.get(user_role__pk=user.role_student.pk, classes__pk=v["id"]),
-                    context=self.get_serializer_context()
-                ).data)
-            elif user.role == settings.choices.user_role.TEACHER:
-                data["role"]["classes"][i].update(settings.serializers.class_student_simple(
-                    settings.models.class_teacher.objects.get(user_role__pk=user.role_teacher.pk, classes__pk=v["id"]),
-                    context=self.get_serializer_context()
-                ).data)
+        if data.get('role'):
+            for i, v in enumerate(data["role"]["classes"]):
+                if user.role == settings.choices.user_role.STUDENT:
+                    data["role"]["classes"][i].update(settings.serializers.class_student_simple(
+                        settings.models.class_student.objects.get(user_role__pk=user.role_student.pk,
+                                                                  classes__pk=v["id"]),
+                        context=self.get_serializer_context()
+                    ).data)
+                elif user.role == settings.choices.user_role.TEACHER:
+                    data["role"]["classes"][i].update(settings.serializers.class_student_simple(
+                        settings.models.class_teacher.objects.get(user_role__pk=user.role_teacher.pk,
+                                                                  classes__pk=v["id"]),
+                        context=self.get_serializer_context()
+                    ).data)
 
         return Response(data=data)
 

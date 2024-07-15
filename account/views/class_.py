@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from account.conf import settings
 from account.models.class_ import Class
-from account.permissions import OnCurrentClassOrAdmin
+from account.permissions import ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin
 from account.serializers.class_ import ClassPublicSimpleSerializer
 
 
@@ -30,12 +30,14 @@ class ClassViewSet(
         if user.admin == 0:
             # 如果不是管理员，则只能获取自己所在的班级
             warnings.warn("暂时禁止列出自己不在的班级", Warning)
-            queryset = user.classes
+            queryset = (user.classes | user.edited_classes).distinct()
         return queryset
 
     def get_permissions(self):
         # if self.action == 'list':
         #     self.permission_classes = settings.
+        if self.action == 'set':
+            self.permission_classes = [ManageCurrentClassOrAdmin]
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -62,3 +64,7 @@ class ClassViewSet(
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": [f"Type {class_type} 不在可选范围内"]})
         return Response(data=settings.serializers.class_officer(objects, many=True).data)
+
+    @action(detail=True, methods=["get"])
+    def set(self, request, *args, **kwargs):
+        instance = self.get_object()
