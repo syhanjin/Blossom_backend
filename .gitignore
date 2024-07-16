@@ -1,0 +1,10 @@
+.idea
+__pycache__
+
+static/
+media/
+!media/photo/default.jpg
+!media/avatar/default.jpg
+
+account/migrations/
+!account/migrations/__init__.py
