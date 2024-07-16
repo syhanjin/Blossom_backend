@@ -44,7 +44,7 @@ class UserViewSet(BaseUserViewSet):
         #     self.permission_classes = settings.
         # if self.action == 'me':
         #     self.permission_classes = [CurrentUserOrAdmin]
-        if self.action == 'set':
+        if self.action == ["partial_update", "images", "me_images"]:
             self.permission_classes = [CurrentUserOrAdmin]
 
         return super(BaseUserViewSet, self).get_permissions()
@@ -59,8 +59,10 @@ class UserViewSet(BaseUserViewSet):
             if self.request.user.pk == obj.pk:
                 return settings.serializers.user_all
             return settings.serializers.user_private
-        elif self.action == "set":
+        elif self.action == "partial_update":
             return settings.serializers.user_set
+        elif self.action in ["images", "me_images"]:
+            return settings.serializers.user_set_images
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     @action(["get"], detail=False)
@@ -97,12 +99,11 @@ class UserViewSet(BaseUserViewSet):
         has_nickname = User.objects.filter(nickname=nickname).exists()
         return Response(data={"has_nickname": has_nickname})
 
-    @action(methods=["post"], detail=True)
-    def set(self, request, *args, **kwargs):
+    # @action(detail=True, methods=["post"])
+    def partial_update(self, request, *args, **kwargs):
         data = request.data
         nickname = data.pop("nickname", None)
-        # get_object已经被覆写了
-        obj = super(BaseUserViewSet, self).get_object()
+        obj = self.get_object()
         if obj.nickname != nickname:
             if User.objects.filter(nickname=nickname).exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"nickname": ["昵称已被使用"]})
@@ -114,3 +115,22 @@ class UserViewSet(BaseUserViewSet):
             validated_data=serializer.validated_data
         )
         return Response(data=serializer.data)
+
+    def _set_images(self, request, detail):
+        if detail:
+            instance = self.get_object()
+        else:
+            instance = request.user
+        serializer = self.get_serializer(instance=instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(data=serializer.data)
+
+    @action(detail=False, methods=["patch"], url_path="me/images")
+    def me_images(self, request, *args, **kwargs):
+        # 这个要在下面那个之前，不然匹配不到
+        return self._set_images(request, False)
+
+    @action(detail=True, methods=["patch"])
+    def images(self, request, *args, **kwargs):
+        return self._set_images(request, True)

@@ -9,7 +9,7 @@ from imagekit.models import ProcessedImageField
 from phonenumber_field.modelfields import PhoneNumberField
 from pilkit.processors import ResizeToFill
 
-from utils import create_uuid
+from utils import create_file_path_getter, create_uuid
 from account.conf import settings as account_settings
 
 
@@ -76,9 +76,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     nickname = models.CharField("昵称", unique=True, max_length=64)
     avatar = ProcessedImageField(
-        verbose_name="头像", default='avatar/default.jpg', upload_to='avatar',
-        processors=[ResizeToFill(72, 72)], format='JPEG',
-        options={'quality': 80}
+        verbose_name="头像", default='avatar/default.jpg', upload_to=create_file_path_getter('avatar'),
+        processors=[ResizeToFill(144, 144)], format='JPEG',
+        options={'quality': 100}
     )
 
     # 身份信息
@@ -86,11 +86,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     gender = models.CharField("性别", max_length=6, choices=GenderChoices.choices)
     birthday = models.DateField("生日", null=True)
     photo = ProcessedImageField(
-        verbose_name="个人照", default='photo/default.jpg', upload_to='photo',
+        verbose_name="个人照", default='photo/default.jpg', upload_to=create_file_path_getter('photo'),
         processors=[ResizeToFill(768, 1024)], format='JPEG',
         options={'quality': 100}
     )
-    # TODO: 保护媒体文件
+    # DONE: 保护媒体文件
+    # 用复杂的文件名实现加密效果
 
     # 身份信息，student: role_student, teacher: role_teacher
     # 允许此处设为null 因为给用户绑定身份的操作与创建用户不放入一个模块

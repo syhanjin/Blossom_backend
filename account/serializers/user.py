@@ -141,3 +141,9 @@ class UserSetSerializer(serializers.ModelSerializer):
     # email = models.EmailField(verbose_name="邮箱", null=True)
     # QQ = models.CharField("QQ", max_length=14, null=True)
     # WeChat = models.CharField("微信", max_length=64, null=True)
+
+
+class UserImagesSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["avatar", "photo"]

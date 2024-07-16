@@ -36,7 +36,7 @@ class ClassViewSet(
     def get_permissions(self):
         # if self.action == 'list':
         #     self.permission_classes = settings.
-        if self.action.startswith("set"):
+        if self.action == "photo":
             self.permission_classes = [ManageCurrentClassOrAdmin]
         return super().get_permissions()
 
@@ -45,7 +45,7 @@ class ClassViewSet(
             return settings.serializers.class_public_simple
         elif self.action == "retrieve":
             return settings.serializers.class_all
-        elif self.action == "set_photo":
+        elif self.action == "photo":
             return settings.serializers.class_set_photo
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
@@ -67,12 +67,11 @@ class ClassViewSet(
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": [f"Type {class_type} 不在可选范围内"]})
         return Response(data=settings.serializers.class_officer(objects, many=True).data)
 
-    @action(detail=True, methods=["post"])
-    def set_photo(self, request, *args, **kwargs):
-        instance = self.get_object()
+    @action(detail=True, methods=["patch"])
+    def photo(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        instance = self.get_object()
         instance.photo = serializer.validated_data["photo"]
         instance.save()
-
         return Response(data={"photo": request.build_absolute_uri(instance.photo.url)})
