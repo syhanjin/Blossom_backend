@@ -4,7 +4,7 @@ from django.db import models
 from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
-from utils import create_uuid
+from utils import create_file_path_getter, create_uuid
 
 User = get_user_model()
 
@@ -96,7 +96,7 @@ class Class(models.Model):
     )
     # 储存照片
     photo = ProcessedImageField(
-        verbose_name="班级合照", default=None, null=True, upload_to='class_photo',
+        verbose_name="班级合照", default=None, null=True, upload_to=create_file_path_getter('class_photo/'),
         format='JPEG', options={'quality': 100}
     )
     photo_preview = ImageSpecField(

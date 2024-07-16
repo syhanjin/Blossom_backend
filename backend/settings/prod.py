@@ -129,9 +129,8 @@ USE_L10N = True
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    # os.path.join(BASE_DIR, "appfront/dist/static"),
-]
+STATIC_ROOT = BASE_DIR / 'static'
+STATICFILES_DIRS = []
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -270,8 +269,27 @@ EMAIL_HOST_PASSWORD = ""
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_FROM = ""
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = '/media/'
+
+# 限制缓存图的保存时间
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": MEDIA_ROOT / "cache",
+        "TIMEOUT": 300,
+    },
+    "thumbnail": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "thumbnail_cache",
+        # "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        # "LOCATION": MEDIA_ROOT / "thumbnails",
+        "TIMEOUT": 300,
+    }
+}
+
+IMAGEKIT_CACHE_BACKEND = "thumbnail"
+
 HOST_URL = "http://127.0.0.1"
 
 PHONENUMBER_DEFAULT_REGION = "CN"

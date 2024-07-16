@@ -61,3 +61,7 @@ class ClassAllSerializer(serializers.ModelSerializer):
                                 settings.serializers.user_private_simple,
                                 settings.serializers.class_teacher_simple, is_teacher=True)
     photo_preview = serializers.ImageField()
+
+
+class ClassPhotoSetSerializer(serializers.Serializer):
+    photo = serializers.ImageField()

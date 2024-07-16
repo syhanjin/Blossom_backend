@@ -172,7 +172,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         elif self.role == UserRoleChoice.STUDENT:
             return self.role_student.classes.all()
         elif self.role == UserRoleChoice.TEACHER:
-            return (self.role_teacher.classes.all() | self.role_teacher.managed_classes.all()).distinct()
+            # 这里似乎并没有导致预料中的重复，可以去掉distinct，这样同时可以避免之后的错误
+            return self.role_teacher.classes.all() | self.role_teacher.managed_classes.all()
 
     @property
     def role_obj(self) -> 'RoleStudent | RoleTeacher | None':

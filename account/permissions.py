@@ -87,7 +87,8 @@ class ManageCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
                 super(ManageCurrentClass, self).has_object_permission(request, view, obj)
-                and request.user.managed_classes.filter(pk=obj.pk).exists()
+                and request.user.role == settings.choices.user_role.TEACHER
+                and request.user.role_teacher.managed_classes.filter(pk=obj.pk).exists()
         )
 
 
