@@ -48,7 +48,7 @@ class Teacher(IsAuthenticated):
 class OnSameAdministrativeClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
-                super(OnSameAdministrativeClass, self).has_object_permission(request, view, obj)
+                super(OnSameAdministrativeClass, self).has_permission(request, view)
                 and isinstance(obj, User)
                 and (obj.get_administrative_class() & request.user.get_administrative_classes()).exists()
         )
@@ -57,7 +57,7 @@ class OnSameAdministrativeClass(IsAuthenticated):
 class OnSameClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (  # 有额外的数据库请求！
-                super(OnSameClass, self).has_object_permission(request, view, obj)
+                super(OnSameClass, self).has_permission(request, view)
                 # and isinstance(obj, User) 开发的时候注意一点就好了
                 and (obj.classes & request.user.classes).exists()
         )
@@ -66,7 +66,7 @@ class OnSameClass(IsAuthenticated):
 class CanEditCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
-                super(CanEditCurrentClass, self).has_object_permission(request, view, obj)
+                super(CanEditCurrentClass, self).has_permission(request, view)
                 and obj.editors.filter(pk=request.user.pk).exists()
         )
 
@@ -74,7 +74,8 @@ class CanEditCurrentClass(IsAuthenticated):
 class OnCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
-                super(OnCurrentClass, self).has_object_permission(request, view, obj)
+                super(OnCurrentClass, self).has_permission(request, view)
+                and request.user.role_obj is not None
                 and (
                         obj.students.filter(pk=request.user.role_obj.pk).exists()
                         or obj.headteacher.pk == request.user.role_obj.pk
@@ -86,7 +87,7 @@ class OnCurrentClass(IsAuthenticated):
 class ManageCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
-                super(ManageCurrentClass, self).has_object_permission(request, view, obj)
+                super(ManageCurrentClass, self).has_permission(request, view)
                 and request.user.role == settings.choices.user_role.TEACHER
                 and request.user.role_teacher.managed_classes.filter(pk=obj.pk).exists()
         )

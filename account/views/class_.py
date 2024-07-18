@@ -52,7 +52,10 @@ class ClassViewSet(
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+        # 告诉前端用户是否可以编辑该班级信息
+        data = serializer.data
+        data["can_edit"] = ManageCurrentClassOrAdmin().has_object_permission(request, self, instance)
+        return Response(data)
 
     @action(detail=False, methods=["get"])
     def officer_type_list(self, request, *args, **kwargs):

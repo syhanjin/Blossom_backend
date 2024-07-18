@@ -83,7 +83,7 @@ class UserViewSet(BaseUserViewSet):
                         context=self.get_serializer_context()
                     ).data)
                 elif user.role == settings.choices.user_role.TEACHER:
-                    data["role"]["classes"][i].update(settings.serializers.class_student_simple(
+                    data["role"]["classes"][i].update(settings.serializers.class_teacher_simple(
                         settings.models.class_teacher.objects.get(user_role__pk=user.role_teacher.pk,
                                                                   classes__pk=v["id"]),
                         context=self.get_serializer_context()
