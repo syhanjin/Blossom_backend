@@ -101,4 +101,6 @@ TeacherOrAdmin = Teacher | Admin
 # 把编辑权限算作管理员权限
 OnSameClassOrAdmin = OnSameClass | Admin | CanEditCurrentClass
 OnCurrentClassOrAdmin = OnCurrentClass | Admin | CanEditCurrentClass
+
+# 管理班级===具有编辑权限
 ManageCurrentClassOrAdmin = ManageCurrentClass | Admin | CanEditCurrentClass

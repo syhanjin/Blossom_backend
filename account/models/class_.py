@@ -105,6 +105,10 @@ class Class(models.Model):
 
     photo_desc = models.TextField("班级合照人员说明", blank=True, null=True, default=None)
 
+    EDITABLE_FIELDS = [
+        "name", "nickname", "created", "graduated", "description", "photo_desc"
+    ]
+
     PUBLIC_SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",
         "created", "graduated", "headteacher",

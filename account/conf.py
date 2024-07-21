@@ -47,6 +47,7 @@ default_settings = {
             # 班级序列化器
             "class_public_simple": serializer("class_.ClassPublicSimpleSerializer"),
             "class_all": serializer("class_.ClassAllSerializer"),
+            "class_set": serializer("class_.ClassSetSerializer"),
             "class_set_photo": serializer("class_.ClassPhotoSetSerializer"),
             # 班级-用户中间件序列化
             "class_student_simple": serializer("class_user_through.ClassStudentSimpleSerializer"),

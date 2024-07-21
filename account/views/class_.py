@@ -14,7 +14,7 @@ from account.serializers.class_ import ClassPublicSimpleSerializer
 class ClassViewSet(
     # mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    # mixins.UpdateModelMixin,
+    mixins.UpdateModelMixin,
     # mixins.DestroyModelMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet
@@ -36,7 +36,7 @@ class ClassViewSet(
     def get_permissions(self):
         # if self.action == 'list':
         #     self.permission_classes = settings.
-        if self.action == "photo":
+        if self.action in ["photo", "partial_update"]:
             self.permission_classes = [ManageCurrentClassOrAdmin]
         return super().get_permissions()
 
@@ -47,6 +47,8 @@ class ClassViewSet(
             return settings.serializers.class_all
         elif self.action == "photo":
             return settings.serializers.class_set_photo
+        elif self.action == "partial_update":
+            return settings.serializers.class_set
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     def retrieve(self, request, *args, **kwargs):

@@ -69,7 +69,6 @@ class UserViewSet(BaseUserViewSet):
     def me(self, request, *args, **kwargs):
         # 覆写掉这个，因为下面这行太诡异了。猜测：每次访问都会重新创建view实例？
         # self.get_object = self.get_instance
-        # 不是很会用各种method，就不用了不就好了
         # return self.retrieve(request, *args, **kwargs)
         # 但是无妨，因为这个本来就要特别对待，在使用retrieve获取数据的时候不会带上中间件
         user = request.user
@@ -108,12 +107,9 @@ class UserViewSet(BaseUserViewSet):
             if User.objects.filter(nickname=nickname).exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"nickname": ["昵称已被使用"]})
             data['nickname'] = nickname
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(instance=self.get_object(), data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.update(
-            instance=self.get_object(),
-            validated_data=serializer.validated_data
-        )
+        serializer.save()
         return Response(data=serializer.data)
 
     def _set_images(self, request, detail):

@@ -60,8 +60,15 @@ class ClassAllSerializer(serializers.ModelSerializer):
     get_teachers = _get_members('teachers',
                                 settings.serializers.user_private_simple,
                                 settings.serializers.class_teacher_simple, is_teacher=True)
+
     photo_preview = serializers.ImageField()
 
 
 class ClassPhotoSetSerializer(serializers.Serializer):
     photo = serializers.ImageField()
+
+
+class ClassSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Class
+        fields = Class.EDITABLE_FIELDS
