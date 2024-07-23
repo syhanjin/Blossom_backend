@@ -9,8 +9,16 @@ from imagekit.models import ProcessedImageField
 from phonenumber_field.modelfields import PhoneNumberField
 from pilkit.processors import ResizeToFill
 
-from utils import create_file_path_getter, create_uuid
+from utils import create_uuid, file_path_getter
 from account.conf import settings as account_settings
+
+
+def user_photo_path(instance, filename):
+    return file_path_getter('photo', instance, filename)
+
+
+def user_avatar_path(instance, filename):
+    return file_path_getter('avatar', instance, filename)
 
 
 class UserManager(BaseUserManager):
@@ -76,7 +84,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     nickname = models.CharField("昵称", unique=True, max_length=64)
     avatar = ProcessedImageField(
-        verbose_name="头像", default='avatar/default.jpg', upload_to=create_file_path_getter('avatar'),
+        verbose_name="头像", default='avatar/default.jpg', upload_to=user_avatar_path,
         processors=[ResizeToFill(144, 144)], format='JPEG',
         options={'quality': 100}
     )
@@ -86,7 +94,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     gender = models.CharField("性别", max_length=6, choices=GenderChoices.choices)
     birthday = models.DateField("生日", null=True)
     photo = ProcessedImageField(
-        verbose_name="个人照", default='photo/default.jpg', upload_to=create_file_path_getter('photo'),
+        verbose_name="个人照", default='photo/default.jpg', upload_to=user_photo_path,
         processors=[ResizeToFill(768, 1024)], format='JPEG',
         options={'quality': 100}
     )
