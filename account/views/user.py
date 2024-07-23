@@ -44,7 +44,7 @@ class UserViewSet(BaseUserViewSet):
         #     self.permission_classes = settings.
         # if self.action == 'me':
         #     self.permission_classes = [CurrentUserOrAdmin]
-        if self.action == ["partial_update", "images", "me_images"]:
+        if self.action in ["partial_update", "images", "me_images"]:
             self.permission_classes = [CurrentUserOrAdmin]
 
         return super(BaseUserViewSet, self).get_permissions()
