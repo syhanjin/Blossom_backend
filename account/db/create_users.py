@@ -37,10 +37,13 @@ def set_role(user, role, **kwargs):
     _role.save()
 
 
+def create_student_user(nickname, password=None):
+    user = User.objects.create_user(nickname=nickname, password=password)
+    set_role(user, settings.choices.user_role.STUDENT)
+    return user
+
+
 def create_teacher_user(nickname, subject, password=None):
-    user = User.objects.create(
-        nickname=nickname
-    )
-    user.set_password(password)
+    user = User.objects.create_user(nickname=nickname, password=password)
     set_role(user, UserRoleChoice.TEACHER, subject=subject)
     return user

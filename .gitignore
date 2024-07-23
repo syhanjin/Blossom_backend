@@ -6,5 +6,8 @@ media/
 !media/photo/default.jpg
 !media/avatar/default.jpg
 
-account/migrations/
-!account/migrations/__init__.py
+migrations/
+!migrations/__init__.py
+
+backend/settings
+!backend/settings/prod.py
