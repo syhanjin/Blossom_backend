@@ -103,7 +103,7 @@ class UserViewSet(BaseUserViewSet):
         data = request.data
         nickname = data.pop("nickname", None)
         obj = self.get_object()
-        if obj.nickname != nickname:
+        if nickname is not None and obj.nickname != nickname:
             if User.objects.filter(nickname=nickname).exists():
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"nickname": ["昵称已被使用"]})
             data['nickname'] = nickname

@@ -59,7 +59,7 @@ class OnSameClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (  # 有额外的数据库请求！
                 super(OnSameClass, self).has_permission(request, view)
-                # and isinstance(obj, User) 开发的时候注意一点就好了
+                and isinstance(obj, User)
                 and (obj.classes & request.user.classes).exists()
         )
 
