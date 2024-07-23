@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 
 from account.conf import settings
+from account.models import Class
 from account.models.user import AdminChoice
 
 User = get_user_model()
@@ -67,6 +68,7 @@ class CanEditCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         return (
                 super(CanEditCurrentClass, self).has_permission(request, view)
+                and isinstance(obj, Class)
                 and obj.editors.filter(pk=request.user.pk).exists()
         )
 
