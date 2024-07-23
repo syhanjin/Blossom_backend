@@ -100,7 +100,7 @@ class UserViewSet(BaseUserViewSet):
 
     # @action(detail=True, methods=["post"])
     def partial_update(self, request, *args, **kwargs):
-        data = request.data
+        data = request.data.copy()
         nickname = data.pop("nickname", None)
         obj = self.get_object()
         if nickname is not None and obj.nickname != nickname:
