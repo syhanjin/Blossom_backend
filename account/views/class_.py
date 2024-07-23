@@ -72,7 +72,7 @@ class ClassViewSet(
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": [f"Type {class_type} 不在可选范围内"]})
         return Response(data=settings.serializers.class_officer(objects, many=True).data)
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["put"])
     def photo(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

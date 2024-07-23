@@ -98,10 +98,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField("身份", null=True, choices=UserRoleChoice.choices, max_length=7)
 
     # 联系方式
-    phone = PhoneNumberField(verbose_name="手机号码", region="CN", null=True)
-    email = models.EmailField(verbose_name="邮箱", null=True)
-    QQ = models.CharField("QQ", max_length=14, null=True)
-    WeChat = models.CharField("微信", max_length=64, null=True)
+    phone = PhoneNumberField(verbose_name="手机号码", region="CN", null=True, blank=True)
+    email = models.EmailField(verbose_name="邮箱", null=True, blank=True)
+    QQ = models.CharField("QQ", max_length=14, null=True, blank=True)
+    WeChat = models.CharField("微信", max_length=64, null=True, blank=True)
 
     # TODO: 去向统计
 
