@@ -34,6 +34,7 @@ default_settings = {
     "serializers": ObjDict(
         {
             # 用户数据序列化器
+            "user_create": serializer("user.UserCreateSerializer"),
             "user_public_simple": serializer("user_simple.UserPublicSimpleSerializer"),
             "user_private_simple": serializer("user_simple.UserPrivateSimpleSerializer"),
             "user_public": serializer("user.UserPublicSerializer"),
@@ -41,6 +42,8 @@ default_settings = {
             "user_all": serializer("user.UserAllSerializer"),
             "user_set": serializer("user.UserSetSerializer"),
             "user_set_images": serializer("user.UserImagesSetSerializer"),
+            "user_role_student_create": serializer("user.UserRoleStudentCreateSerializer"),
+            "user_role_teacher_create": serializer("user.UserRoleTeacherCreateSerializer"),
             # 用户身份数据序列化器
             "role_student_public": serializer("user.RoleStudentPublicSerializer"),
             "role_teacher_public": serializer("user.RoleTeacherPublicSerializer"),

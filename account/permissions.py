@@ -19,6 +19,11 @@ class Admin(_Admin):
         return super()._has_permission(AdminChoice.NORMAL, request, view)
 
 
+class AdminSuper(_Admin):
+    def has_permission(self, request, view):
+        return super()._has_permission(AdminChoice.SUPER, request, view)
+
+
 class AdminDeveloper(_Admin):
     def has_permission(self, request, view):
         return super()._has_permission(AdminChoice.DEVELOPER, request, view)

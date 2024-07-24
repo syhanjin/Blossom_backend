@@ -23,14 +23,14 @@ def user_avatar_path(instance, filename):
 
 class UserManager(BaseUserManager):
     # 定义用户管理器方法
-    def create_user(self, nickname, password=None):
+    def create_user(self, nickname=None, password=None, **extra_fields):
         """
         创建用户
         """
         if not nickname:
             raise ValueError('用户必须拥有用户名')
 
-        user = self.model(nickname=nickname, )
+        user = self.model(nickname=nickname, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -116,7 +116,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     # 班级关联信息，从班级关联用户
     objects = UserManager()
 
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = [
+        "name"
+    ]
     PUBLIC_SIMPLE_FIELDS = [
         "id", "nickname", "role", "avatar",
     ]
