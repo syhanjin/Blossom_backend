@@ -112,6 +112,9 @@ class Class(models.Model):
     EDITABLE_FIELDS = [
         "name", "nickname", "created", "graduated", "description", "photo_desc"
     ]
+    REQUIRED_FIELDS = [
+        "name", "created", "type", "headteacher"
+    ]
 
     PUBLIC_SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",

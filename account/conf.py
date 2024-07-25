@@ -48,10 +48,12 @@ default_settings = {
             "role_student_public": serializer("user.RoleStudentPublicSerializer"),
             "role_teacher_public": serializer("user.RoleTeacherPublicSerializer"),
             # 班级序列化器
+            "class_create": serializer("class_.ClassCreateSerializer"),
             "class_public_simple": serializer("class_.ClassPublicSimpleSerializer"),
             "class_all": serializer("class_.ClassAllSerializer"),
             "class_set": serializer("class_.ClassSetSerializer"),
             "class_set_photo": serializer("class_.ClassPhotoSetSerializer"),
+            "class_students_add": serializer("class_.ClassStudentAddSerializer"),
             # 班级-用户中间件序列化
             "class_student_simple": serializer("class_user_through.ClassStudentSimpleSerializer"),
             "class_teacher_simple": serializer("class_user_through.ClassTeacherSimpleSerializer"),

@@ -3,16 +3,18 @@ import warnings
 
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from account.conf import settings
 from account.models.class_ import Class
-from account.permissions import ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin
+from account.models.user import UserRoleChoice
+from account.permissions import AdminSuper, ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin
 from account.serializers.class_ import ClassPublicSimpleSerializer
 
 
 class ClassViewSet(
-    # mixins.CreateModelMixin,
+    mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     # mixins.DestroyModelMixin,
@@ -38,17 +40,29 @@ class ClassViewSet(
         #     self.permission_classes = settings.
         if self.action in ["photo", "partial_update"]:
             self.permission_classes = [ManageCurrentClassOrAdmin]
+        elif self.action in ["create", "members"]:
+            self.permission_classes = [AdminSuper]
         return super().get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":
             return settings.serializers.class_public_simple
+        elif self.action == "create":
+            return settings.serializers.class_create
         elif self.action == "retrieve":
             return settings.serializers.class_all
         elif self.action == "photo":
             return settings.serializers.class_set_photo
         elif self.action == "partial_update":
             return settings.serializers.class_set
+        elif self.action == "members":
+            role = self.request.data.get("role")
+            if not role:
+                raise ValidationError("`role` is required")
+            elif role == UserRoleChoice.STUDENT:
+                return settings.serializers.class_students_add
+            else:
+                raise ValidationError(f"{role=} 不在可选范围内")
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     def retrieve(self, request, *args, **kwargs):
@@ -80,3 +94,17 @@ class ClassViewSet(
         instance.photo = serializer.validated_data["photo"]
         instance.save()
         return Response(data={"photo": request.build_absolute_uri(instance.photo.url)})
+
+    @action(detail=True, methods=["patch"])
+    def members(self, request, *args, **kwargs):
+        data = request.data.copy()
+        role = data.pop("role")
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        obj = self.get_object()
+        if role == UserRoleChoice.STUDENT:
+            obj.students.add(*serializer.validated_data["students"])
+        elif role == UserRoleChoice.TEACHER:
+            obj.teachers.add(*serializer.validated_data["teachers"])
+        obj.save()
+        return Response(data={"teacher_count": obj.teachers.count(), "student_count": obj.students.count()})

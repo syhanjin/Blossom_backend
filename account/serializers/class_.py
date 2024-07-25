@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from account.conf import settings
 from account.models.class_ import Class, ClassStudent, ClassTeacher
+from account.models.user import UserRoleChoice
+
+User = get_user_model()
 
 
 class ClassPublicSimpleSerializer(serializers.ModelSerializer):
@@ -72,3 +76,78 @@ class ClassSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Class
         fields = Class.EDITABLE_FIELDS
+
+
+class ClassCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Class
+        fields = Class.REQUIRED_FIELDS
+
+    name = serializers.CharField(max_length=5)
+    created = serializers.IntegerField(min_value=2017, max_value=2500)
+    headteacher = serializers.CharField(min_length=8, max_length=8)
+
+    def validate_name(self, value: str):
+        value = value.upper()
+        if not len(value) == 5:
+            raise serializers.ValidationError(f"{value=} 的长度不是5")
+        if not value[0] in ["C", "K"]:
+            raise serializers.ValidationError(f"{value=} 不是以`C`或`K`开头")
+        if not value[1:].isdigit():
+            raise serializers.ValidationError(f"{value=} 的后四位不是数字")
+        return value
+
+    def validate_headteacher(self, value):
+        headteacher = User.objects.filter(id=value)
+        if not headteacher.exists():
+            raise serializers.ValidationError("所设置的班主任不存在")
+        headteacher = headteacher.first()
+        if headteacher.role != UserRoleChoice.TEACHER:
+            raise serializers.ValidationError("所设置的班主任不是老师")
+        if not headteacher.role_teacher:
+            raise ValueError
+        return headteacher.role_teacher
+
+
+def _validate_member(value, role, role_name):
+    if len(value) == 0:
+        raise serializers.ValidationError(f"请至少设置一名{role_name}")
+    members = []
+    err = []
+    for _id in value:
+        obj = User.objects.filter(id=_id)
+        if not obj.exists():
+            err.append(f"用户{_id}不存在")
+            continue
+        obj = obj.first()
+        if obj.role != role:
+            err.append(f"用户{_id}不是{role_name}")
+        elif not obj.role_student:
+            raise ValueError
+        else:
+            members.append(obj.role_student)
+    if len(err) > 0:
+        raise serializers.ValidationError(err)
+    return members
+
+
+class ClassStudentAddSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Class
+        fields = ["students"]
+
+    students = serializers.ListField(child=serializers.CharField(min_length=8, max_length=8))
+
+    def validate_students(self, value):
+        return _validate_member(value, UserRoleChoice.STUDENT, "学生")
+
+
+class ClassTeacherAddSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Class
+        fields = ["teachers"]
+
+    teachers = serializers.ListField(child=serializers.CharField(min_length=8, max_length=8))
+
+    def validate_teachers(self, value):
+        return _validate_member(value, UserRoleChoice.TEACHER, "老师")

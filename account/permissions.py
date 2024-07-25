@@ -11,7 +11,7 @@ User = get_user_model()
 
 class _Admin(IsAuthenticated):
     def _has_permission(self, admin, request, view):
-        return super().has_permission(request, view) and request.user.admin > admin
+        return super().has_permission(request, view) and request.user.admin >= admin
 
 
 class Admin(_Admin):
