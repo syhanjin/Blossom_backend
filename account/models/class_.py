@@ -134,7 +134,7 @@ class ClassMembership(models.Model):
 
     # 命名不规范，将就一下
     classes = models.ForeignKey(Class, on_delete=models.CASCADE)
-    aka = models.TextField("外号", max_length=1024, blank=True)  # also known as
+    aka = models.TextField("外号", max_length=128, blank=True)  # also known as
 
     joined = models.DateField("加入时间", null=True, default=None)
     exited = models.DateField("离开时间", null=True, default=None)
@@ -147,7 +147,7 @@ class ClassStudent(ClassMembership):
         ]
 
     user_role = models.ForeignKey("account.RoleStudent", on_delete=models.CASCADE)
-    rank = models.CharField("在班级内的“地位”", max_length=128, blank=True)
+    rank = models.CharField("在班级内的“地位”", max_length=1024, blank=True)
     # 班级内的职位
     """
     说明：
