@@ -3,10 +3,12 @@ from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet as BaseUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from account.conf import settings
-from account.permissions import CurrentUserOrAdmin
+from account.models.choices import UserRoleChoice
+from account.permissions import AdminSuper, CurrentUserOrAdmin
 
 User = get_user_model()
 
@@ -46,12 +48,16 @@ class UserViewSet(BaseUserViewSet):
         #     self.permission_classes = [CurrentUserOrAdmin]
         if self.action in ["partial_update", "images", "me_images"]:
             self.permission_classes = [CurrentUserOrAdmin]
+        elif self.action == ["role"]:
+            self.permission_classes = [AdminSuper]
 
         return super(BaseUserViewSet, self).get_permissions()
 
     def get_serializer_class(self):
         if self.action == "list":
             return settings.serializers.user_public_simple
+        elif self.action == "create":
+            return settings.serializers.user_create
         elif self.action == "me":
             return settings.serializers.user_all
         elif self.action == "retrieve":
@@ -63,6 +69,16 @@ class UserViewSet(BaseUserViewSet):
             return settings.serializers.user_set
         elif self.action in ["images", "me_images"]:
             return settings.serializers.user_set_images
+        elif self.action == "role":
+            role = self.request.data.get("role")
+            if role is None:
+                raise ValidationError("`role` is required")
+            elif role == UserRoleChoice.STUDENT:
+                return settings.serializers.user_role_student_create
+            elif role == UserRoleChoice.TEACHER:
+                return settings.serializers.user_role_teacher_create
+            else:
+                raise ValidationError(f"{role=} 不在可选范围内")
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     @action(["get"], detail=False)
@@ -130,3 +146,17 @@ class UserViewSet(BaseUserViewSet):
     @action(detail=True, methods=["patch"])
     def images(self, request, *args, **kwargs):
         return self._set_images(request, True)
+
+    @action(detail=True, methods=["post"])
+    def role(self, request, *args, **kwargs):
+        data = request.data.copy()
+        role = data.pop("role")
+        obj = self.get_object()
+        data["user"] = obj.id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        obj.role = role[0]
+        # print(role)
+        obj.save()
+        serializer.save()
+        return Response(data=serializer.data)

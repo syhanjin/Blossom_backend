@@ -18,7 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework import routers
+from rest_framework_nested import routers
 
 import account.views.user
 import account.views.class_
@@ -27,12 +27,16 @@ router = routers.DefaultRouter()
 router.register("users", account.views.user.UserViewSet)
 router.register("classes", account.views.class_.ClassViewSet)
 
+class_router = routers.NestedDefaultRouter(router, "classes", lookup="class")
+class_router.register("students", account.views.class_.ClassStudentViewSet)
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/", include('djoser.urls.authtoken')),
 ]
 urlpatterns += [
     path(settings.BASE_URL, include(router.urls)),
+    path(settings.BASE_URL, include(class_router.urls)),
 ]
 
 if settings.DEBUG:

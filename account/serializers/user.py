@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from account.conf import settings
+from account.models import RoleStudent, RoleTeacher
 
 User = get_user_model()
 
@@ -135,3 +136,25 @@ class UserImagesSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["avatar", "photo"]
+
+
+class UserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = User.REQUIRED_FIELDS + [
+            User.USERNAME_FIELD, "password", "id"
+        ]
+
+    id = serializers.CharField(required=False, max_length=8)
+
+
+class UserRoleStudentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoleStudent
+        fields = ["user"]
+
+
+class UserRoleTeacherCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoleTeacher
+        fields = ["user", "subject"]

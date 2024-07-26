@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 
 from account.conf import settings
 from account.models import RoleStudent, RoleTeacher
-from account.models.user import UserRoleChoice
+from account.models.choices import UserRoleChoice
 
 """
 shell 

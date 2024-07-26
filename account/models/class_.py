@@ -4,6 +4,7 @@ from django.db import models
 from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
+from account.models.choices import ClassTypeChoice
 from utils import create_uuid, file_path_getter
 
 User = get_user_model()
@@ -11,11 +12,6 @@ User = get_user_model()
 
 def class_photo_path(instance, filename):
     return file_path_getter('class_photo/', instance, filename)
-
-
-class ClassTypeChoice(models.TextChoices):
-    ADMINISTRATIVE = "administrative", "行政班级"
-    WALKING = "walking", "走班班级"
 
 
 class ClassManager(models.Manager):
@@ -112,6 +108,9 @@ class Class(models.Model):
     EDITABLE_FIELDS = [
         "name", "nickname", "created", "graduated", "description", "photo_desc"
     ]
+    REQUIRED_FIELDS = [
+        "name", "created", "type", "headteacher"
+    ]
 
     PUBLIC_SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",
@@ -135,10 +134,10 @@ class ClassMembership(models.Model):
 
     # 命名不规范，将就一下
     classes = models.ForeignKey(Class, on_delete=models.CASCADE)
-    aka = models.TextField("外号", max_length=1024, null=True)  # also known as
+    aka = models.TextField("外号", max_length=128, blank=True)  # also known as
 
-    joined = models.DateTimeField("加入时间", null=True, default=None)
-    exited = models.DateTimeField("离开时间", null=True, default=None)
+    joined = models.DateField("加入时间", null=True, default=None)
+    exited = models.DateField("离开时间", null=True, default=None)
 
 
 class ClassStudent(ClassMembership):
@@ -148,17 +147,23 @@ class ClassStudent(ClassMembership):
         ]
 
     user_role = models.ForeignKey("account.RoleStudent", on_delete=models.CASCADE)
-    rank = models.CharField("在班级内的“地位”", max_length=128, null=True)
+    rank = models.CharField("在班级内的“地位”", max_length=1024, blank=True)
     # 班级内的职位
     """
     说明：
     区分走班和行政班，职位的选项不同，ClassOfficer的administrative和walking两个健用于区分
     """
-    position = models.ManyToManyField('account.ClassOfficer', verbose_name="职位")
+    position = models.ManyToManyField('account.ClassOfficer', verbose_name="职位", null=True)
     number = models.PositiveSmallIntegerField("学号", null=True)
 
     SIMPLE_FIELDS = [
         "number", "rank", "position", "aka"
+    ]
+    ALL_FIELDS = SIMPLE_FIELDS + [
+        "joined", "exited",
+    ]
+    EDITABLE_FIELDS = [
+        "aka", "joined", "exited", "position", "number", "rank"
     ]
 
 
@@ -170,6 +175,10 @@ class ClassTeacher(ClassMembership):
 
     user_role = models.ForeignKey("account.RoleTeacher", on_delete=models.CASCADE)
     SIMPLE_FIELDS = ["aka"]
+
+    ALL_FIELDS = SIMPLE_FIELDS + [
+        "joined", "exited",
+    ]
 
 
 class ClassOfficer(models.Model):

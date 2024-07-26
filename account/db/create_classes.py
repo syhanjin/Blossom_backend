@@ -2,7 +2,8 @@
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
 
-from account.models.class_ import Class, ClassTypeChoice
+from account.models.class_ import Class
+from account.models.choices import ClassTypeChoice
 
 """
 shell 
