@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 
 from account.conf import settings
-from account.models import Class
-from account.models.user import AdminChoice
+from account.models import Class, ClassMembership, ClassStudent, ClassTeacher
+from account.models.choices import AdminChoice
 
 User = get_user_model()
 
@@ -51,26 +51,50 @@ class Teacher(IsAuthenticated):
         )
 
 
+class CurrentMember(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, (ClassStudent, ClassTeacher)):
+            return True
+        return (
+                super(CurrentMember, self).has_permission(request, view)
+                and request.user.pk == obj.user_role.user.pk
+        )
+
+
 class OnSameAdministrativeClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, User):
+            return True
         return (
                 super(OnSameAdministrativeClass, self).has_permission(request, view)
-                and isinstance(obj, User)
                 and (obj.get_administrative_class() & request.user.get_administrative_classes()).exists()
         )
 
 
 class OnSameClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, User):
+            return True
         return (  # 有额外的数据库请求！
                 super(OnSameClass, self).has_permission(request, view)
-                and isinstance(obj, User)
                 and (obj.classes & request.user.classes).exists()
+        )
+
+
+class OnSameClassWithClassMemberShip(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, ClassMembership):
+            return True
+        return (
+                super(OnSameClassWithClassMemberShip, self).has_permission(request, view)
+                and request.user.classes.filter(pk=obj.classes.pk).exists()
         )
 
 
 class CanEditCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, Class):
+            return True
         return (
                 super(CanEditCurrentClass, self).has_permission(request, view)
                 and isinstance(obj, Class)
@@ -80,6 +104,8 @@ class CanEditCurrentClass(IsAuthenticated):
 
 class OnCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, Class):
+            return True
         return (
                 super(OnCurrentClass, self).has_permission(request, view)
                 and request.user.role_obj is not None
@@ -93,6 +119,8 @@ class OnCurrentClass(IsAuthenticated):
 
 class ManageCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, Class):
+            return True
         return (
                 super(ManageCurrentClass, self).has_permission(request, view)
                 and request.user.role == settings.choices.user_role.TEACHER
@@ -106,8 +134,10 @@ StudentOrAdmin = Student | Admin
 TeacherOrAdmin = Teacher | Admin
 
 # 把编辑权限算作管理员权限
-OnSameClassOrAdmin = OnSameClass | Admin | CanEditCurrentClass
+OnSameClassOrAdmin = OnSameClass | Admin
+OnSameClassWithClassMembershipOrAdmin = OnSameClassWithClassMemberShip | Admin
 OnCurrentClassOrAdmin = OnCurrentClass | Admin | CanEditCurrentClass
+CurrentMemberOrAdmin = CurrentMember | Admin
 
 # 管理班级===具有编辑权限
 ManageCurrentClassOrAdmin = ManageCurrentClass | Admin | CanEditCurrentClass

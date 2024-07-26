@@ -5,11 +5,13 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework_nested.viewsets import NestedViewSetMixin
 
 from account.conf import settings
-from account.models.class_ import Class
-from account.models.user import UserRoleChoice
-from account.permissions import AdminSuper, ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin
+from account.models.class_ import Class, ClassStudent
+from account.models.choices import UserRoleChoice
+from account.permissions import AdminSuper, CurrentMemberOrAdmin, ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin, \
+    OnSameClassWithClassMembershipOrAdmin
 from account.serializers.class_ import ClassPublicSimpleSerializer
 
 
@@ -108,3 +110,32 @@ class ClassViewSet(
             obj.teachers.add(*serializer.validated_data["teachers"])
         obj.save()
         return Response(data={"teacher_count": obj.teachers.count(), "student_count": obj.students.count()})
+
+
+class ClassStudentViewSet(NestedViewSetMixin,
+                          mixins.ListModelMixin,
+                          mixins.RetrieveModelMixin,
+                          mixins.UpdateModelMixin,
+                          viewsets.GenericViewSet):
+    parent_lookup_kwargs = {"class_id": "classes__id"}
+    lookup_field = 'user_role__user__id'
+    queryset = ClassStudent.objects.all()
+    permission_classes = [OnCurrentClassOrAdmin]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return settings.serializers.class_student
+        elif self.action == "retrieve":
+            return settings.serializers.class_student
+        elif self.action in ["update", "partial_update"]:
+            return settings.serializers.class_student_set
+
+        raise NotImplementedError(f"{self.action=} 未实现")
+
+    def get_permissions(self):
+        if self.action == "retrieve":
+            self.permission_classes = [OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin]
+        elif self.action in ["update", "partial_update"]:
+            self.permission_classes = [CurrentMemberOrAdmin]
+
+        return super().get_permissions()

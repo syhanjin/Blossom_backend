@@ -57,14 +57,17 @@ default_settings = {
             # 班级-用户中间件序列化
             "class_student_simple": serializer("class_user_through.ClassStudentSimpleSerializer"),
             "class_teacher_simple": serializer("class_user_through.ClassTeacherSimpleSerializer"),
+            "class_student": serializer("class_user_through.ClassStudentSerializer"),
+            "class_teacher": serializer("class_user_through.ClassTeacherSerializer"),
+            "class_student_set": serializer("class_user_through.ClassStudentSetSerializer"),
             # 班级职位
             "class_officer": serializer("class_user_through.ClassOfficerTypeSerializer"),
         }
     ),
     "choices": ObjDict(
         {
-            "user_role": model("user.UserRoleChoice"),
-            "class_type": model("class_.ClassTypeChoice"),
+            "user_role": model("choices.UserRoleChoice"),
+            "class_type": model("choices.ClassTypeChoice"),
         }
     )
 }

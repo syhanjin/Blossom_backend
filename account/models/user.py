@@ -9,6 +9,7 @@ from imagekit.models import ProcessedImageField
 from phonenumber_field.modelfields import PhoneNumberField
 from pilkit.processors import ResizeToFill
 
+from account.models.choices import AdminChoice, GenderChoices, UserRoleChoice
 from utils import create_uuid, file_path_getter
 from account.conf import settings as account_settings
 
@@ -46,25 +47,6 @@ class UserManager(BaseUserManager):
         user.admin = admin
         user.save(using=self._db)
         return user
-
-
-class AdminChoice(models.IntegerChoices):
-    USER = 0, "普通用户"
-    NORMAL = 1, "管理员"
-
-    SUPER = 5, "超级管理员"
-    DEVELOPER = 10, "开发者"
-
-
-class UserRoleChoice(models.TextChoices):
-    STUDENT = "student", "学生"
-    TEACHER = "teacher", "老师"
-    PARENT = "PARENT", "家长"
-
-
-class GenderChoices(models.TextChoices):
-    male = "male", "男"
-    female = "female", "女"
 
 
 class User(AbstractBaseUser, PermissionsMixin):

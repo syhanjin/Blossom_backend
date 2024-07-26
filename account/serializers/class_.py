@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from account.conf import settings
 from account.models.class_ import Class, ClassStudent, ClassTeacher
-from account.models.user import UserRoleChoice
+from account.models.choices import UserRoleChoice
 
 User = get_user_model()
 

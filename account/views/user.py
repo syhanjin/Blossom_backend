@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from account.conf import settings
-from account.models.user import UserRoleChoice
+from account.models.choices import UserRoleChoice
 from account.permissions import AdminSuper, CurrentUserOrAdmin
 
 User = get_user_model()
