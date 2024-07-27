@@ -63,6 +63,8 @@ class ClassViewSet(
                 raise ValidationError("`role` is required")
             elif role == UserRoleChoice.STUDENT:
                 return settings.serializers.class_students_add
+            elif role == UserRoleChoice.TEACHER:
+                return settings.serializers.class_teachers_add
             else:
                 raise ValidationError(f"{role=} 不在可选范围内")
         raise NotImplementedError(f"Action {self.action} 未实现！")

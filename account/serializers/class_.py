@@ -81,8 +81,9 @@ class ClassSetSerializer(serializers.ModelSerializer):
 class ClassCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Class
-        fields = Class.REQUIRED_FIELDS
+        fields = Class.REQUIRED_FIELDS + ["id"]
 
+    id = serializers.CharField(max_length=8, required=False)
     name = serializers.CharField(max_length=5)
     created = serializers.IntegerField(min_value=2017, max_value=2500)
     headteacher = serializers.CharField(min_length=8, max_length=8)
