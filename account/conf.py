@@ -54,6 +54,7 @@ default_settings = {
             "class_set": serializer("class_.ClassSetSerializer"),
             "class_set_photo": serializer("class_.ClassPhotoSetSerializer"),
             "class_students_add": serializer("class_.ClassStudentAddSerializer"),
+            "class_teachers_add": serializer("class_.ClassTeacherAddSerializer"),
             # 班级-用户中间件序列化
             "class_student_simple": serializer("class_user_through.ClassStudentSimpleSerializer"),
             "class_teacher_simple": serializer("class_user_through.ClassTeacherSimpleSerializer"),
