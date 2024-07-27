@@ -126,7 +126,7 @@ def _validate_member(value, role, role_name):
         elif not obj.role_student:
             raise ValueError
         else:
-            members.append(obj.role_student)
+            members.append(obj.role_obj)
     if len(err) > 0:
         raise serializers.ValidationError(err)
     return members
