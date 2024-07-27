@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework_nested.viewsets import NestedViewSetMixin
 
 from account.conf import settings
-from account.models.class_ import Class, ClassStudent
+from account.models.class_ import Class, ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
 from account.permissions import AdminSuper, CurrentMemberOrAdmin, ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin, \
     OnSameClassWithClassMembershipOrAdmin
@@ -129,6 +129,35 @@ class ClassStudentViewSet(NestedViewSetMixin,
             return settings.serializers.class_student
         elif self.action in ["update", "partial_update"]:
             return settings.serializers.class_student_set
+
+        raise NotImplementedError(f"{self.action=} 未实现")
+
+    def get_permissions(self):
+        if self.action == "retrieve":
+            self.permission_classes = [OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin]
+        elif self.action in ["update", "partial_update"]:
+            self.permission_classes = [CurrentMemberOrAdmin]
+
+        return super().get_permissions()
+
+
+class ClassTeacherViewSet(NestedViewSetMixin,
+                          mixins.ListModelMixin,
+                          mixins.RetrieveModelMixin,
+                          mixins.UpdateModelMixin,
+                          viewsets.GenericViewSet):
+    parent_lookup_kwargs = {"class_id": "classes__id"}
+    lookup_field = 'user_role__user__id'
+    queryset = ClassTeacher.objects.all()
+    permission_classes = [OnCurrentClassOrAdmin]
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return settings.serializers.class_teacher
+        elif self.action == "retrieve":
+            return settings.serializers.class_teacher
+        elif self.action in ["update", "partial_update"]:
+            return settings.serializers.class_teacher_set
 
         raise NotImplementedError(f"{self.action=} 未实现")
 

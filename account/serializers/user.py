@@ -2,6 +2,7 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from rest_framework import serializers
 
 from account.conf import settings
@@ -138,7 +139,7 @@ class UserImagesSetSerializer(serializers.ModelSerializer):
         fields = ["avatar", "photo"]
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(BaseUserCreateSerializer):
     class Meta:
         model = User
         fields = User.REQUIRED_FIELDS + [

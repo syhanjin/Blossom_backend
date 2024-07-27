@@ -26,7 +26,7 @@ class UserManager(BaseUserManager):
     # 定义用户管理器方法
     def create_user(self, nickname=None, password=None, **extra_fields):
         """
-        创建用户
+        创建用户, 因为未知原因，需要留一个符号占位
         """
         if not nickname:
             raise ValueError('用户必须拥有用户名')
