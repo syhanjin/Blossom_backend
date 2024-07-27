@@ -29,6 +29,7 @@ router.register("classes", account.views.class_.ClassViewSet)
 
 class_router = routers.NestedDefaultRouter(router, "classes", lookup="class")
 class_router.register("students", account.views.class_.ClassStudentViewSet)
+class_router.register("teachers", account.views.class_.ClassTeacherViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
