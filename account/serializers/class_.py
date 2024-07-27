@@ -123,7 +123,7 @@ def _validate_member(value, role, role_name):
         obj = obj.first()
         if obj.role != role:
             err.append(f"用户{_id}不是{role_name}")
-        elif not obj.role_student:
+        elif not obj.role_obj:
             raise ValueError
         else:
             members.append(obj.role_obj)
