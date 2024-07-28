@@ -77,7 +77,7 @@ class Class(models.Model):
     """
     editors = models.ManyToManyField(User, related_name="edited_classes")
 
-    nickname = models.CharField("班级昵称", max_length=64)  # 可以自己设置
+    nickname = models.CharField("班级昵称", max_length=64, blank=True, null=True)  # 可以自己设置
     created = models.PositiveSmallIntegerField("建班年份")
     graduated = models.PositiveSmallIntegerField("毕业年份", null=True)
 

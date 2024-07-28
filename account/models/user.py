@@ -111,7 +111,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         "id", "name", "nickname", "gender", "role", "avatar", "photo"
     ]
     PRIVATE_FIELDS = PRIVATE_SIMPLE_FIELDS + [
+        # 私有数据展示给同学和老师
         "created",
+        "name", "gender", "birthday", "photo",  # 身份信息
+        "phone", "email", "QQ", "WeChat",  # 联系方式
     ]
     ALL_FIELDS = PUBLIC_FIELDS + [
         "name", "gender", "birthday", "photo",  # 身份信息
