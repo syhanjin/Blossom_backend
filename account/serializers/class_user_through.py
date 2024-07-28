@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from account.conf import settings
+from account.models.class_ import ClassOfficer
 
 
 class ClassStudentSimpleSerializer(serializers.ModelSerializer):
@@ -25,6 +26,12 @@ class ClassStudentSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = settings.models.class_student
         fields = settings.models.class_student.EDITABLE_FIELDS
+
+    position = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=ClassOfficer.objects.all(),
+        allow_empty=True
+    )
 
 
 class ClassTeacherSimpleSerializer(serializers.ModelSerializer):
