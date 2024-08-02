@@ -179,6 +179,9 @@ class ClassTeacher(ClassMembership):
     ALL_FIELDS = SIMPLE_FIELDS + [
         "joined", "exited",
     ]
+    EDITABLE_FIELDS = [
+        "aka", "joined", "exited",
+    ]
 
 
 class ClassOfficer(models.Model):

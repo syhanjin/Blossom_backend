@@ -52,6 +52,12 @@ class ClassTeacherSerializer(serializers.ModelSerializer):
     subject = serializers.CharField(source="user_role.subject")
 
 
+class ClassTeacherSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = settings.models.class_teacher
+        fields = settings.models.class_teacher.EDITABLE_FIELDS
+
+
 class ClassOfficerTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = settings.models.class_officer
