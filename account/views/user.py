@@ -4,6 +4,7 @@ from djoser.views import UserViewSet as BaseUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from account.conf import settings
@@ -17,10 +18,6 @@ class UserViewSet(BaseUserViewSet):
     """
     直接继承djoser的UserViewSet，改动部分功能和添加特定功能
     """
-
-    # 非常危险！！！！ 可能通过update修改方法！
-    def update(self, request, *args, **kwargs):
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def permission_denied(self, request, **kwargs):
         # if (
@@ -46,10 +43,12 @@ class UserViewSet(BaseUserViewSet):
         #     self.permission_classes = settings.
         # if self.action == 'me':
         #     self.permission_classes = [CurrentUserOrAdmin]
-        if self.action in ["partial_update", "images", "me_images"]:
+        if self.action in ["partial_update", "images", "me_images", "update"]:
             self.permission_classes = [CurrentUserOrAdmin]
-        elif self.action == ["role"]:
+        elif self.action in ["role"]:
             self.permission_classes = [AdminSuper]
+        elif self.action == "has_nickname":
+            self.permission_classes = [IsAuthenticated]
 
         return super(BaseUserViewSet, self).get_permissions()
 
@@ -65,7 +64,7 @@ class UserViewSet(BaseUserViewSet):
             if self.request.user.pk == obj.pk:
                 return settings.serializers.user_all
             return settings.serializers.user_private
-        elif self.action == "partial_update":
+        elif self.action in ["partial_update", "update"]:
             return settings.serializers.user_set
         elif self.action in ["images", "me_images"]:
             return settings.serializers.user_set_images
@@ -114,6 +113,13 @@ class UserViewSet(BaseUserViewSet):
         has_nickname = User.objects.filter(nickname=nickname).exists()
         return Response(data={"has_nickname": has_nickname})
 
+    # 非常危险！！！！ 可能通过update修改方法！
+    def update(self, request, *args, **kwargs):
+        if request.query_params.get("partial", "false").lower() == "true":
+            # 由于uni-app没有patch方法，所以使用partial=True通过put方法实现patch
+            return self.partial_update(request, *args, **kwargs)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     # @action(detail=True, methods=["post"])
     def partial_update(self, request, *args, **kwargs):
         data = request.data.copy()
@@ -138,13 +144,19 @@ class UserViewSet(BaseUserViewSet):
         serializer.save()
         return Response(data=serializer.data)
 
-    @action(detail=False, methods=["patch"], url_path="me/images")
+    @action(detail=False, methods=["patch", "put"], url_path="me/images")
     def me_images(self, request, *args, **kwargs):
         # 这个要在下面那个之前，不然匹配不到
+        if request.method.upper() == "PUT" and not request.query_params.get("partial", "false").lower() == "true":
+            # 由于uni-app没有patch方法，所以使用partial=True通过put方法实现patch
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return self._set_images(request, False)
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["patch", "put"])
     def images(self, request, *args, **kwargs):
+        if request.method.upper() == "PUT" and not request.query_params.get("partial", "false").lower() == "true":
+            # 由于uni-app没有patch方法，所以使用partial=True通过put方法实现patch
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return self._set_images(request, True)
 
     @action(detail=True, methods=["post"])

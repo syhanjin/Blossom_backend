@@ -40,7 +40,7 @@ class ClassViewSet(
     def get_permissions(self):
         # if self.action == 'list':
         #     self.permission_classes = settings.
-        if self.action in ["photo", "partial_update"]:
+        if self.action in ["photo", "partial_update", "update"]:
             self.permission_classes = [ManageCurrentClassOrAdmin]
         elif self.action in ["create", "members"]:
             self.permission_classes = [AdminSuper]
@@ -55,7 +55,7 @@ class ClassViewSet(
             return settings.serializers.class_all
         elif self.action == "photo":
             return settings.serializers.class_set_photo
-        elif self.action == "partial_update":
+        elif self.action in ["partial_update", "update"]:
             return settings.serializers.class_set
         elif self.action == "members":
             role = self.request.data.get("role")
@@ -76,6 +76,13 @@ class ClassViewSet(
         data = serializer.data
         data["can_edit"] = ManageCurrentClassOrAdmin().has_object_permission(request, self, instance)
         return Response(data)
+
+    def update(self, request, *args, **kwargs):
+        if kwargs.get("partial", False) or request.query_params.get("partial", "false").lower() == "true":
+            # 因为默认的partial_update方法是调用update方法实现的
+            kwargs["partial"] = True
+            return super().update(request, *args, **kwargs)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(detail=False, methods=["get"])
     def officer_type_list(self, request, *args, **kwargs):
@@ -99,8 +106,11 @@ class ClassViewSet(
         instance.save()
         return Response(data={"photo": request.build_absolute_uri(instance.photo.url)})
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["patch", "put"])
     def members(self, request, *args, **kwargs):
+        if request.method.upper() == "PUT" and not request.query_params.get("partial", "false").lower() == "true":
+            # 由于uni-app没有patch方法，所以使用partial=True通过put方法实现patch
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         data = request.data.copy()
         role = data.pop("role")
         serializer = self.get_serializer(data=data)
@@ -142,6 +152,11 @@ class ClassStudentViewSet(NestedViewSetMixin,
 
         return super().get_permissions()
 
+    def update(self, request, *args, **kwargs):
+        if request.query_params.get("partial", "false").lower() == "true":
+            kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)
+
 
 class ClassTeacherViewSet(NestedViewSetMixin,
                           mixins.ListModelMixin,
@@ -170,3 +185,8 @@ class ClassTeacherViewSet(NestedViewSetMixin,
             self.permission_classes = [CurrentMemberOrAdmin]
 
         return super().get_permissions()
+
+    def update(self, request, *args, **kwargs):
+        if request.query_params.get("partial", "false").lower() == "true":
+            kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)
