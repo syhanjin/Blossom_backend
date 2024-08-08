@@ -78,8 +78,10 @@ class ClassViewSet(
         return Response(data)
 
     def update(self, request, *args, **kwargs):
-        if request.query_params.get("partial", "false").lower() == "true":
-            return super().update(request, partial=True, *args, **kwargs)
+        if kwargs.get("partial", False) or request.query_params.get("partial", "false").lower() == "true":
+            # 因为默认的partial_update方法是调用update方法实现的
+            kwargs["partial"] = True
+            return super().update(request, *args, **kwargs)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     @action(detail=False, methods=["get"])

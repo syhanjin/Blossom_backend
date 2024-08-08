@@ -4,6 +4,7 @@ from djoser.views import UserViewSet as BaseUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from account.conf import settings
@@ -44,8 +45,10 @@ class UserViewSet(BaseUserViewSet):
         #     self.permission_classes = [CurrentUserOrAdmin]
         if self.action in ["partial_update", "images", "me_images", "update"]:
             self.permission_classes = [CurrentUserOrAdmin]
-        elif self.action == ["role"]:
+        elif self.action in ["role"]:
             self.permission_classes = [AdminSuper]
+        elif self.action == "has_nickname":
+            self.permission_classes = [IsAuthenticated]
 
         return super(BaseUserViewSet, self).get_permissions()
 
