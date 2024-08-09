@@ -2,6 +2,8 @@
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from rest_framework import serializers
 
@@ -166,3 +168,22 @@ class UserRoleTeacherCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RoleTeacher
         fields = ["user", "subject"]
+
+
+# 由于djoser的用户密码重置策略是发送重置邮件，我只能手搓一个别的了
+class PasswordResetSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True, style={"input_type": "password"})
+    new_password = serializers.CharField(required=True, style={"input_type": "password"})
+
+    def validate(self, attrs):
+        user = getattr(self, "user", None) or self.context["request"].user
+        # why assert? There are ValidationError / fail everywhere
+        assert user is not None
+        if not user.check_password(attrs["old_password"]):
+            raise serializers.ValidationError({"old_password": ["密码错误"]})
+
+        try:
+            validate_password(attrs["new_password"], user)
+        except ValidationError as e:
+            raise serializers.ValidationError({"new_password": list(e.messages)})
+        return super().validate(attrs)

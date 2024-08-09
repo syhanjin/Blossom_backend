@@ -35,6 +35,7 @@ default_settings = {
         {
             # 用户数据序列化器
             "user_create": serializer("user.UserCreateSerializer"),
+            "user_password_reset": serializer("user.PasswordResetSerializer"),
             "user_public_simple": serializer("user_simple.UserPublicSimpleSerializer"),
             "user_private_simple": serializer("user_simple.UserPrivateSimpleSerializer"),
             "user_public": serializer("user.UserPublicSerializer"),
