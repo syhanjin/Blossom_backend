@@ -22,10 +22,12 @@ from rest_framework_nested import routers
 
 import account.views.user
 import account.views.class_
+import apps.views
 
 router = routers.DefaultRouter()
 router.register("users", account.views.user.UserViewSet)
 router.register("classes", account.views.class_.ClassViewSet)
+router.register("apps", apps.views.AppViewSet)
 
 class_router = routers.NestedDefaultRouter(router, "classes", lookup="class")
 class_router.register("students", account.views.class_.ClassStudentViewSet)

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import djoser.utils
 from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet as BaseUserViewSet
 from rest_framework import status
@@ -9,7 +10,7 @@ from rest_framework.response import Response
 
 from account.conf import settings
 from account.models.choices import UserRoleChoice
-from account.permissions import AdminSuper, CurrentUserOrAdmin
+from account.permissions import AdminSuper, CurrentUser, CurrentUserOrAdmin
 
 User = get_user_model()
 
@@ -18,6 +19,16 @@ class UserViewSet(BaseUserViewSet):
     """
     直接继承djoser的UserViewSet，改动部分功能和添加特定功能
     """
+
+    # 去掉父类某些功能，用不到
+    activation = None
+    resend_activation = None
+    set_password = None
+    reset_password = None
+    reset_password_confirm = None
+    set_username = None
+    reset_username = None
+    reset_username_confirm = None
 
     def permission_denied(self, request, **kwargs):
         # if (
@@ -49,6 +60,8 @@ class UserViewSet(BaseUserViewSet):
             self.permission_classes = [AdminSuper]
         elif self.action == "has_nickname":
             self.permission_classes = [IsAuthenticated]
+        elif self.action == "password_reset":
+            self.permission_classes = [CurrentUser]
 
         return super(BaseUserViewSet, self).get_permissions()
 
@@ -78,6 +91,8 @@ class UserViewSet(BaseUserViewSet):
                 return settings.serializers.user_role_teacher_create
             else:
                 raise ValidationError(f"{role=} 不在可选范围内")
+        elif self.action == "password_reset":
+            return settings.serializers.user_password_reset
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     @action(["get"], detail=False)
@@ -152,9 +167,12 @@ class UserViewSet(BaseUserViewSet):
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return self._set_images(request, False)
 
-    @action(detail=True, methods=["patch", "put"])
+    @action(detail=True, methods=["patch", "put", "post"])
     def images(self, request, *args, **kwargs):
-        if request.method.upper() == "PUT" and not request.query_params.get("partial", "false").lower() == "true":
+        # 为什么会有POST！？不是说RESTful吗？还不是为了兼容uniapp...
+        # 此处POST方法与PUT方法具有同样效果
+        if (request.method.upper() in ["PUT", 'POST'] and
+                not request.query_params.get("partial", "false").lower() == "true"):
             # 由于uni-app没有patch方法，所以使用partial=True通过put方法实现patch
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return self._set_images(request, True)
@@ -172,3 +190,14 @@ class UserViewSet(BaseUserViewSet):
         obj.save()
         serializer.save()
         return Response(data=serializer.data)
+
+    @action(detail=False, methods=["post"])
+    def password_reset(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_password = serializer.validated_data["new_password"]
+        user = request.user
+        user.set_password(new_password)
+        user.save()
+        djoser.utils.logout_user(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'imagekit',
     'django_cleanup.apps.CleanupConfig',
     'account',
+    'apps',
 ]
 
 # 忽略部分问题
