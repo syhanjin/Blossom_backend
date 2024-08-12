@@ -130,8 +130,8 @@ class ClassViewSet(
     @action(detail=True, methods=["get"])
     def map(self, request, *args, **kwargs):
         class_obj = self.get_object()
-        fp = django_settings.MEDIA_ROOT / class_obj.map.name
-        if not class_obj.map or not fp.exists():
+
+        def make_json():
             # 生成地图数据
             fc = class_obj.get_map_geojson()
             file = io.StringIO()
@@ -140,6 +140,13 @@ class ClassViewSet(
             json.dump(fc, file)
             class_obj.map = File(file)
             class_obj.save()
+
+        if not class_obj.map:
+            make_json()
+        else:
+            fp = django_settings.MEDIA_ROOT / class_obj.map.name
+            if not fp.exists():
+                make_json()
         return Response(data={
             "map": request.build_absolute_uri(class_obj.map.url),
         })
