@@ -157,12 +157,16 @@ class UserStudentSetSerializer(serializers.ModelSerializer):
     city = serializers.CharField(source="role_student.city", allow_null=True)
 
     def validate_school(self, value):
+        if value is None:
+            return None
         school = School.objects.filter(name=value)
         if not school.exists():
             raise serializers.ValidationError(f"学校{value}不存在")
         return school.first()
 
     def validate_city(self, value):
+        if value is None:
+            return None
         city = City.objects.filter(name=value)
         if not city.exists():
             raise serializers.ValidationError(f"城市{value}不存在")
