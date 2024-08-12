@@ -9,6 +9,7 @@ from rest_framework import serializers
 
 from account.conf import settings
 from account.models import RoleStudent, RoleTeacher
+from destination.models import City, School
 
 User = get_user_model()
 
@@ -25,6 +26,14 @@ class RoleStudentPublicSerializer(serializers.ModelSerializer):
     classes = settings.serializers.class_public_simple(many=True)
 
 
+class RoleStudentPrivateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = settings.models.user_role_student
+        fields = settings.models.user_role_student.PRIVATE_FIELDS
+
+    school = serializers.CharField(source="school.name", default=None)
+
+
 class RoleStudentAllSerializer(serializers.ModelSerializer):
     """
     用户身份序列化器-学生-公开数据，此序列化器序列化公开的内容
@@ -34,6 +43,7 @@ class RoleStudentAllSerializer(serializers.ModelSerializer):
         model = settings.models.user_role_student
         fields = settings.models.user_role_student.ALL_FIELDS
 
+    school = serializers.CharField(source="school.name", default=None)
     classes = settings.serializers.class_public_simple(many=True)
 
 
@@ -110,6 +120,14 @@ class UserPrivateSerializer(serializers.ModelSerializer, RoleMixin):
         model = User
         fields = User.PRIVATE_FIELDS
 
+    def get_role(self, obj):
+        return _get_role(
+            self,
+            obj,
+            RoleStudentPrivateSerializer,
+            RoleTeacherPublicSerializer,
+        )
+
 
 class UserAllSerializer(serializers.ModelSerializer, RoleMixin):
     """
@@ -129,7 +147,41 @@ class UserAllSerializer(serializers.ModelSerializer, RoleMixin):
         )
 
 
-class UserSetSerializer(serializers.ModelSerializer):
+class UserStudentSetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = User.EDITABLE_FIELDS + ["school", "campus", "city"]
+
+    school = serializers.CharField(source="role_student.school")
+    campus = serializers.CharField(source="role_student.campus")
+    city = serializers.CharField(source="role_student.city")
+
+    def validate_school(self, value):
+        school = School.objects.filter(name=value)
+        if not school.exists():
+            raise serializers.ValidationError(f"学校{value}不存在")
+        return school.first()
+
+    def validate_city(self, value):
+        city = City.objects.filter(name=value)
+        if not city.exists():
+            raise serializers.ValidationError(f"城市{value}不存在")
+        return city.first()
+
+    def update(self, instance, validated_data):
+        # 不能有多对多关系
+        role_student = validated_data.pop("role_student", None)
+        if role_student is not None:
+            for attr, value in role_student.items():
+                setattr(instance.role_student, attr, value)
+            instance.role_student.save()
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
+class UserTeacherSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = User.EDITABLE_FIELDS

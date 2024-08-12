@@ -78,7 +78,12 @@ class UserViewSet(BaseUserViewSet):
                 return settings.serializers.user_all
             return settings.serializers.user_private
         elif self.action in ["partial_update", "update"]:
-            return settings.serializers.user_set
+            obj = self.get_object()
+            if obj.role == UserRoleChoice.STUDENT:
+                return settings.serializers.user_student_set
+            elif obj.role == UserRoleChoice.TEACHER:
+                return settings.serializers.user_teacher_set
+            raise ValueError(f"{obj.role=}")
         elif self.action in ["images", "me_images"]:
             return settings.serializers.user_set_images
         elif self.action == "role":

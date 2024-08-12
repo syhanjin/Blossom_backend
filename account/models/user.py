@@ -93,8 +93,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     QQ = models.CharField("QQ", max_length=14, null=True, blank=True)
     WeChat = models.CharField("微信", max_length=64, null=True, blank=True)
 
-    # TODO: 去向统计
-
     # 班级关联信息，从班级关联用户
     objects = UserManager()
 
@@ -108,7 +106,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         "created", "admin"
     ]
     PRIVATE_SIMPLE_FIELDS = [
-        "id", "name", "nickname", "gender", "role", "avatar", "photo"
+        "id", "name", "nickname", "gender", "role", "avatar", "photo", "phone"
     ]
     PRIVATE_FIELDS = PRIVATE_SIMPLE_FIELDS + [
         # 私有数据展示给同学和老师
@@ -204,9 +202,20 @@ class RoleStudent(Role):
     用于储存用户的身份信息
     """
     user = models.OneToOneField(User, related_name="role_student", on_delete=models.CASCADE, primary_key=True)
+    # TODO: 去向统计
+    school = models.ForeignKey('destination.School', verbose_name="学校", related_name="users",
+                               on_delete=models.SET_NULL, null=True)
+    campus = models.CharField(verbose_name="校区", max_length=128, null=True, blank=True)
+    city = models.ForeignKey('destination.City', verbose_name="城市", related_name="users",
+                             on_delete=models.SET_NULL, null=True)
 
     PUBLIC_FIELDS = ["classes"]
-    ALL_FIELDS = PUBLIC_FIELDS + []
+    PRIVATE_FIELDS = PUBLIC_FIELDS + [
+        "school", "campus", "city"
+    ]
+    ALL_FIELDS = PUBLIC_FIELDS + [
+        "school", "campus", "city"
+    ]
 
 
 class RoleTeacher(Role):

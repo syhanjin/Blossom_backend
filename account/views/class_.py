@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import io
+import json
 import warnings
 
 from rest_framework import mixins, status, viewsets
@@ -6,6 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_nested.viewsets import NestedViewSetMixin
+from django.core.files import File
+from django.conf import settings as django_settings
 
 from account.conf import settings
 from account.models.class_ import Class, ClassStudent, ClassTeacher
@@ -122,6 +126,23 @@ class ClassViewSet(
             obj.teachers.add(*serializer.validated_data["teachers"])
         obj.save()
         return Response(data={"teacher_count": obj.teachers.count(), "student_count": obj.students.count()})
+
+    @action(detail=True, methods=["get"])
+    def map(self, request, *args, **kwargs):
+        class_obj = self.get_object()
+        fp = django_settings.MEDIA_ROOT / class_obj.map.name
+        if not class_obj.map or not fp.exists():
+            # 生成地图数据
+            fc = class_obj.get_map_geojson()
+            file = io.StringIO()
+            file.name = "map.json"
+            file.seek(0)
+            json.dump(fc, file)
+            class_obj.map = File(file)
+            class_obj.save()
+        return Response(data={
+            "map": request.build_absolute_uri(class_obj.map.url),
+        })
 
 
 class ClassStudentViewSet(NestedViewSetMixin,
