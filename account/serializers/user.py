@@ -152,9 +152,9 @@ class UserStudentSetSerializer(serializers.ModelSerializer):
         model = User
         fields = User.EDITABLE_FIELDS + ["school", "campus", "city"]
 
-    school = serializers.CharField(source="role_student.school")
-    campus = serializers.CharField(source="role_student.campus")
-    city = serializers.CharField(source="role_student.city")
+    school = serializers.CharField(source="role_student.school", allow_null=True)
+    campus = serializers.CharField(source="role_student.campus", allow_blank=True, allow_null=True)
+    city = serializers.CharField(source="role_student.city", allow_null=True)
 
     def validate_school(self, value):
         school = School.objects.filter(name=value)
