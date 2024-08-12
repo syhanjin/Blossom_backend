@@ -22,12 +22,23 @@ class UserPrivateSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = User.PRIVATE_SIMPLE_FIELDS + ['subject']
+        fields = User.PRIVATE_SIMPLE_FIELDS + [
+            'subject',
+            'school', 'campus', 'city'
+        ]
 
     subject = serializers.CharField(source='role_teacher.subject')
+
+    school = serializers.CharField(source='role_student.school.name', default=None)
+    campus = serializers.CharField(source='role_student.campus')
+    city = serializers.CharField(source='role_student.city.name', default=None)
 
     def __init__(self, *args, **kwargs):
         is_teacher = kwargs.pop('is_teacher', False)
         super(UserPrivateSimpleSerializer, self).__init__(*args, **kwargs)
-        if not is_teacher:
+        if is_teacher:
+            self.fields.pop('school')
+            self.fields.pop('campus')
+            self.fields.pop('city')
+        else:
             self.fields.pop("subject")

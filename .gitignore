@@ -10,3 +10,6 @@ media/
 
 backend/settings
 !backend/settings/prod.py
+
+destination/geojson
+destination/districts

@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
+
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import QuerySet
 from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
+from account.models import RoleStudent
 from account.models.choices import ClassTypeChoice
+from account.serializers.user_map import UserMapSerializer
+from destination.utils.geo import district_to_feature, get_district
 from utils import create_uuid, file_path_getter
 
 User = get_user_model()
@@ -12,6 +17,10 @@ User = get_user_model()
 
 def class_photo_path(instance, filename):
     return file_path_getter('class_photo/', instance, filename)
+
+
+def map_path(instance, filename):
+    return file_path_getter('map/', instance, filename)
 
 
 class ClassManager(models.Manager):
@@ -105,6 +114,9 @@ class Class(models.Model):
 
     photo_desc = models.TextField("班级合照人员说明", blank=True, null=True, default=None)
 
+    # 去向统计地图名字
+    map = models.FileField(verbose_name="地图json数据", upload_to=map_path, null=True, default=None)
+
     EDITABLE_FIELDS = [
         "name", "nickname", "created", "graduated", "description", "photo_desc"
     ]
@@ -126,6 +138,72 @@ class Class(models.Model):
     ]
 
     objects = ClassManager()
+
+    # 去向统计部分
+    def get_map_geojson(self):
+        """
+
+        :return:
+        """
+
+        def get_students(city_name) -> QuerySet[RoleStudent]:
+            _students = self.students.filter(city__name=city_name)
+            return _students
+
+        # 四个直辖市和两个特别行政区
+        special_adcodes = [
+            "310000",  # 上海市
+            "500000",  # 重庆市
+            "810000",  # 香港特别行政区
+            "820000",  # 澳门特别行政区
+            "110000",  # 北京市
+        ]
+        _map, points = ({"type": "FeatureCollection", "features": []},
+                        {"type": "FeatureCollection", "features": []})
+        # 获取中国边界信息
+        country = get_district(100000)
+        # feature_collection["features"].append(district_to_feature(country))
+        # print("country")
+        for district in country["districts"]:
+            # print("province", district["name"])
+            # 省级行政单位
+            if district["adcode"] in special_adcodes:
+                # 如果是特别行政区
+                students = get_students(district["name"])
+                if students.count() > 0:
+                    # 首先获得中心点Feature
+                    center_feature = district_to_feature(district)
+                    center_feature["properties"]["province"] = district["name"]
+                    center_feature["properties"]["students"] = UserMapSerializer(students, many=True).data
+                    center_feature["properties"]["count"] = students.count()
+                    points["features"].append(center_feature)
+                # 获得轮廓
+                all_district = get_district(district["adcode"], 0)
+                feature = district_to_feature(all_district)
+                feature["properties"]["count"] = students.count()
+                _map["features"].append(feature)
+            else:
+                # 如果是普通省
+                province = get_district(district["adcode"])
+                count = 0
+                for city in province["districts"]:
+                    students = get_students(city["name"])
+                    if len(students) > 0:
+                        count += len(students)
+                        feature = district_to_feature(city)
+                        feature["properties"]["count"] = students.count()
+                        feature["properties"]["students"] = UserMapSerializer(students, many=True).data
+                        feature["properties"]["province"] = district["name"]
+                        points["features"].append(feature)
+                province_feature = district_to_feature(province)
+                province_feature["properties"]["count"] = count
+                _map["features"].append(province_feature)
+
+        # echarts点必须单独拿出来，所以我这里修改一下分开搞
+        return {
+            "map": _map,
+            "points": points,
+        }
 
 
 class ClassMembership(models.Model):

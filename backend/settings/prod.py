@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'account',
     'apps',
+    'destination'
 ]
 
 # 忽略部分问题
