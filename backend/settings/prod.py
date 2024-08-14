@@ -278,8 +278,8 @@ MEDIA_URL = '/media/'
 # 限制缓存图的保存时间
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": MEDIA_ROOT / "cache",
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "default_cache",
         "TIMEOUT": 300,
     },
     "thumbnail": {

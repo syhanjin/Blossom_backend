@@ -84,6 +84,20 @@ def district_to_feature(district):
     }
 
 
+def district_to_point(district):
+    """
+
+    :param district: 高德的地区数据格式
+    :return: name, adcode, level, coordinates(lon, lat)
+    """
+    return {
+        "name": district["name"],
+        "adcode": district["adcode"],
+        "level": district["level"],
+        "coordinates": string_to_point(district["center"])
+    }
+
+
 def district_to_feature_collection(district, children=False):
     """
     将高德的district转化为geojson
