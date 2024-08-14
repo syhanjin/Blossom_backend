@@ -117,6 +117,16 @@ class OnCurrentClass(IsAuthenticated):
         )
 
 
+class IsMapActive(OnCurrentClass):
+    def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, Class):
+            return True
+        return (
+                super(IsMapActive, self).has_object_permission(request, view, obj)
+                and obj.map_activated
+        )
+
+
 class ManageCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         if not isinstance(obj, Class):

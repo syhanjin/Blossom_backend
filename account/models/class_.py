@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
+import io
+import json
 
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import QuerySet
+from django.core.files import File
+from django.core.cache import cache
 from imagekit.models import ImageSpecField, ProcessedImageField
 from pilkit.processors import ResizeToFill
 
 from account.models import RoleStudent
 from account.models.choices import ClassTypeChoice
-from account.serializers.user_map import UserMapSerializer
-from destination.utils.geo import district_to_feature, get_district
+from destination.utils.geo import district_to_feature, district_to_point, get_district
 from utils import create_uuid, file_path_getter
 
 User = get_user_model()
@@ -115,6 +118,7 @@ class Class(models.Model):
     photo_desc = models.TextField("班级合照人员说明", blank=True, null=True, default=None)
 
     # 去向统计地图名字
+    map_activated = models.BooleanField(default=False)
     map = models.FileField(verbose_name="地图json数据", upload_to=map_path, null=True, default=None)
 
     EDITABLE_FIELDS = [
@@ -143,7 +147,9 @@ class Class(models.Model):
     def get_map_geojson(self):
         """
 
-        :return:
+        :return: 携带整张地图信息的GeoJson数据，不携带具体学生信息
+        *我在班级学生列表中携带了城市和学校信息，所以学生信息在前端通过过滤器形式匹配城市得到
+        *前端性能问题...18M的地图还考虑性能问题？
         """
 
         def get_students(city_name) -> QuerySet[RoleStudent]:
@@ -158,8 +164,9 @@ class Class(models.Model):
             "820000",  # 澳门特别行政区
             "110000",  # 北京市
         ]
+        # 地图采用geojson格式，点就不了
         _map, points = ({"type": "FeatureCollection", "features": []},
-                        {"type": "FeatureCollection", "features": []})
+                        [])
         # 获取中国边界信息
         country = get_district(100000)
         # feature_collection["features"].append(district_to_feature(country))
@@ -172,11 +179,10 @@ class Class(models.Model):
                 students = get_students(district["name"])
                 if students.count() > 0:
                     # 首先获得中心点Feature
-                    center_feature = district_to_feature(district)
-                    center_feature["properties"]["province"] = district["name"]
-                    center_feature["properties"]["students"] = UserMapSerializer(students, many=True).data
-                    center_feature["properties"]["count"] = students.count()
-                    points["features"].append(center_feature)
+                    center_feature = district_to_point(district)
+                    center_feature["province"] = district["name"]
+                    center_feature["count"] = students.count()
+                    points.append(center_feature)
                 # 获得轮廓
                 all_district = get_district(district["adcode"], 0)
                 feature = district_to_feature(all_district)
@@ -190,11 +196,10 @@ class Class(models.Model):
                     students = get_students(city["name"])
                     if len(students) > 0:
                         count += len(students)
-                        feature = district_to_feature(city)
-                        feature["properties"]["count"] = students.count()
-                        feature["properties"]["students"] = UserMapSerializer(students, many=True).data
-                        feature["properties"]["province"] = district["name"]
-                        points["features"].append(feature)
+                        feature = district_to_point(city)
+                        feature["count"] = students.count()
+                        feature["province"] = district["name"]
+                        points.append(feature)
                 province_feature = district_to_feature(province)
                 province_feature["properties"]["count"] = count
                 _map["features"].append(province_feature)
@@ -204,6 +209,21 @@ class Class(models.Model):
             "map": _map,
             "points": points,
         }
+
+    def create_map_file(self):
+        cache.get_or_set(self.map_cache_key, 43200)
+        file = io.StringIO()
+        file.name = "map.json"
+        file.seek(0)
+        json.dump(self.get_map_geojson(), file)
+        self.map = File(file)
+        self.save()
+        # 这样就实现了地图12小时刷新
+        cache.set(self.map_cache_key, "generated", 43200)
+
+    @property
+    def map_cache_key(self):
+        return f"CLASS_MAP_{self.created}_{self.name}_STATUS", "generating"
 
 
 class ClassMembership(models.Model):

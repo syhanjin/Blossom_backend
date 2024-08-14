@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import io
-import json
 import warnings
 
 from rest_framework import mixins, status, viewsets
@@ -8,14 +6,14 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_nested.viewsets import NestedViewSetMixin
-from django.core.files import File
 from django.conf import settings as django_settings
+from django.core.cache import cache
 
 from account.conf import settings
 from account.models.class_ import Class, ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
-from account.permissions import AdminSuper, CurrentMemberOrAdmin, ManageCurrentClassOrAdmin, OnCurrentClassOrAdmin, \
-    OnSameClassWithClassMembershipOrAdmin
+from account.permissions import AdminSuper, CurrentMemberOrAdmin, IsMapActive, ManageCurrentClassOrAdmin, \
+    OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin
 from account.serializers.class_ import ClassPublicSimpleSerializer
 
 
@@ -48,6 +46,8 @@ class ClassViewSet(
             self.permission_classes = [ManageCurrentClassOrAdmin]
         elif self.action in ["create", "members"]:
             self.permission_classes = [AdminSuper]
+        elif self.action == "map":
+            self.permission_classes = [IsMapActive]
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -130,23 +130,14 @@ class ClassViewSet(
     @action(detail=True, methods=["get"])
     def map(self, request, *args, **kwargs):
         class_obj = self.get_object()
-
-        def make_json():
-            # 生成地图数据
-            fc = class_obj.get_map_geojson()
-            file = io.StringIO()
-            file.name = "map.json"
-            file.seek(0)
-            json.dump(fc, file)
-            class_obj.map = File(file)
-            class_obj.save()
-
-        if not class_obj.map:
-            make_json()
+        """这里考虑到一个问题：如果另一个用户访问时正在创建文件，缓存状态为generating，此时我再次创建
+        可能导致：1. 文件被占用报错 2. 资源使用过多 3. 缓存状态卡在generating"""
+        if not class_obj.map or not cache.get(class_obj.map_cache_key) == 'generated':
+            class_obj.create_map_file()
         else:
             fp = django_settings.MEDIA_ROOT / class_obj.map.name
             if not fp.exists():
-                make_json()
+                class_obj.create_map_file()
         return Response(data={
             "map": request.build_absolute_uri(class_obj.map.url),
         })
