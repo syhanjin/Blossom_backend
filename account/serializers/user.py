@@ -14,6 +14,11 @@ from destination.models import City, School
 User = get_user_model()
 
 
+# TODO: 重构序列化器
+#  由于设计上不打算支持查看别的班级学生，所以区分序列化内容的Public和Private便没有必要
+#  只需要区分Simple和All来应对list模式和retrieve模式
+
+
 class RoleStudentPublicSerializer(serializers.ModelSerializer):
     """
     用户身份序列化器-学生-公开数据，此序列化器序列化公开的内容
