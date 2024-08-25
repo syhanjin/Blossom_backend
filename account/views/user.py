@@ -8,7 +8,7 @@ from djoser.views import UserViewSet as BaseUserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.filters import SearchFilter
+from rest_framework.filters import BaseFilterBackend, SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,8 +20,27 @@ from account.permissions import AdminSuper, CurrentUser, CurrentUserOrAdmin
 User = get_user_model()
 
 
+class UserBaseFilter(BaseFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        if view.action in ['list']:
+            # 因为只有list方法需要过滤...吧
+            class_id = request.query_params.get('cid', None)
+            if class_id is not None:
+                class_id = class_id.split(',')
+                queryset = queryset.filter(
+                    Q(role_student__classes__id__in=class_id) | Q(role_teacher__classes__id__in=class_id)
+                )
+            role = request.query_params.get('r', None)
+            if role:
+                # 用简写
+                role = {"s": UserRoleChoice.STUDENT, "t": UserRoleChoice.TEACHER}.get(role, None)
+                queryset = queryset.filter(role=role)
+        return queryset
+
+
 class UserPagination(PageNumberPagination):
     page_size = 20
+    page_size_query_param = 'page_size'
     max_page_size = 50
 
 
@@ -40,8 +59,8 @@ class UserViewSet(BaseUserViewSet):
     reset_username = None
     reset_username_confirm = None
 
-    filter_backends = [SearchFilter]
-    search_fields = ["name", "id"]
+    filter_backends = [UserBaseFilter, SearchFilter]
+    search_fields = ["name", "=id"]
     pagination_class = UserPagination
     ordering_fields = ["name"]
 
@@ -63,22 +82,6 @@ class UserViewSet(BaseUserViewSet):
             # 如果不是管理员，则只能获取自己的同学或者老师
             queryset = self.request.user.get_classmates() | self.request.user.get_teachers()
             # print(queryset.count())
-
-        # 接下来我们依据参数进行过滤
-        if self.action in ['list']:
-            # 因为只有list方法需要过滤...吧
-            class_id = self.request.query_params.get('cid', None)
-            if class_id is not None:
-                class_id = class_id.split(',')
-                queryset = queryset.filter(
-                    Q(role_student__classes__id__in=class_id) | Q(role_teacher__classes__id__in=class_id)
-                )
-            role = self.request.query_params.get('r', None)
-            if role:
-                # 用简写
-                role = {"s": UserRoleChoice.STUDENT, "t": UserRoleChoice.TEACHER}.get(role, None)
-                queryset = queryset.filter(role=role)
-        # print(queryset.count())
         return queryset
 
     def get_permissions(self):
