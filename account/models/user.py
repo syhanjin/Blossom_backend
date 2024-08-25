@@ -135,13 +135,17 @@ class User(AbstractBaseUser, PermissionsMixin):
     def get_classmates(self) -> QuerySet:
         # 该方案存在bug，只会获取一个用户
         # return User.objects.filter(id__in=self.classes.values_list("students", flat=True).all())
-        students = QuerySet(RoleStudent)
+        # 下面这种写法等于 RoleStudent.objects.all() 要不是今天遇到bug还发现不了这个问题 这是一个安全问题！
+        # students = QuerySet(RoleStudent)
+        students = RoleStudent.objects.none()
         for class_obj in self.classes.all():
             students |= class_obj.students.all()
         return User.objects.filter(pk__in=students.values_list("user", flat=True))
 
     def get_teachers(self):
-        teachers = QuerySet(RoleTeacher)
+        # -.-
+        # teachers = QuerySet(RoleTeacher)
+        teachers = RoleTeacher.objects.none()
         for class_obj in self.classes.all():
             teachers |= class_obj.teachers.all()
         return User.objects.filter(pk__in=teachers.values_list("user", flat=True))
