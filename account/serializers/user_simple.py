@@ -27,10 +27,10 @@ class UserPrivateSimpleSerializer(serializers.ModelSerializer):
             'school', 'campus', 'city'
         ]
 
-    subject = serializers.CharField(source='role_teacher.subject')
+    subject = serializers.CharField(source='role_teacher.subject', default=None)
 
     school = serializers.CharField(source='role_student.school.name', default=None)
-    campus = serializers.CharField(source='role_student.campus')
+    campus = serializers.CharField(source='role_student.campus', default=None)
     city = serializers.CharField(source='role_student.city.name', default=None)
 
     def __init__(self, *args, **kwargs):
@@ -42,3 +42,8 @@ class UserPrivateSimpleSerializer(serializers.ModelSerializer):
             self.fields.pop('city')
         else:
             self.fields.pop("subject")
+
+
+class UserPrivateCompatibleSimpleSerializer(UserPrivateSimpleSerializer):
+    def __init__(self, *args, **kwargs):
+        super(UserPrivateSimpleSerializer, self).__init__(*args, **kwargs)

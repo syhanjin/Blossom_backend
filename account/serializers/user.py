@@ -236,7 +236,7 @@ class PasswordResetSerializer(serializers.Serializer):
         # why assert? There are ValidationError / fail everywhere
         assert user is not None
         if not user.check_password(attrs["old_password"]):
-            raise serializers.ValidationError({"old_password": ["密码错误"]})
+            raise serializers.ValidationError({"old_password": ["原密码错误"]})
 
         try:
             validate_password(attrs["new_password"], user)

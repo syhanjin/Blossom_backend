@@ -38,6 +38,7 @@ default_settings = {
             "user_password_reset": serializer("user.PasswordResetSerializer"),
             "user_public_simple": serializer("user_simple.UserPublicSimpleSerializer"),
             "user_private_simple": serializer("user_simple.UserPrivateSimpleSerializer"),
+            "user_private_compatible_simple": serializer("user_simple.UserPrivateCompatibleSimpleSerializer"),
             "user_public": serializer("user.UserPublicSerializer"),
             "user_private": serializer("user.UserPrivateSerializer"),
             "user_all": serializer("user.UserAllSerializer"),
