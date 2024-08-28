@@ -128,15 +128,15 @@ class Class(models.Model):
         "name", "created", "type", "headteacher"
     ]
 
-    PUBLIC_SIMPLE_FIELDS = [
+    SIMPLE_FIELDS = [
         "id", "name", "nickname", "type",
         "created", "graduated", "headteacher",
         "teacher_count", "student_count"
     ]
-    PUBLIC_FIELDS = PUBLIC_SIMPLE_FIELDS + [
+    FIELDS = SIMPLE_FIELDS + [
         "description"
     ]
-    ALL_FIELDS = PUBLIC_FIELDS + [
+    ALL_FIELDS = FIELDS + [
         "students", "teachers",
         "photo", "photo_preview", "photo_desc",
     ]

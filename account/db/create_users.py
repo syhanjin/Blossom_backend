@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.contrib.auth import get_user_model
 
-from account.conf import settings
 from account.models import RoleStudent, RoleTeacher
 from account.models.choices import UserRoleChoice
 
@@ -26,9 +25,9 @@ def create_developer_user(nickname, password=None):
 
 
 def set_role(user, role, **kwargs):
-    if role == settings.choices.user_role.STUDENT:
+    if role == UserRoleChoice.STUDENT:
         _role = RoleStudent.objects.create(user=user, **kwargs)
-    elif role == settings.choices.user_role.TEACHER:
+    elif role == UserRoleChoice.TEACHER:
         _role = RoleTeacher.objects.create(user=user, **kwargs)
     else:
         raise ValueError(f'Unknown role: {role}')
@@ -39,7 +38,7 @@ def set_role(user, role, **kwargs):
 
 def create_student_user(nickname, password=None):
     user = User.objects.create_user(nickname=nickname, password=password)
-    set_role(user, settings.choices.user_role.STUDENT)
+    set_role(user, UserRoleChoice.STUDENT)
     return user
 
 

@@ -9,9 +9,8 @@ from imagekit.models import ProcessedImageField
 from phonenumber_field.modelfields import PhoneNumberField
 from pilkit.processors import ResizeToFill
 
-from account.models.choices import AdminChoice, GenderChoices, UserRoleChoice
+from account.models.choices import AdminChoice, ClassTypeChoice, GenderChoices, UserRoleChoice
 from utils import create_uuid, file_path_getter
-from account.conf import settings as account_settings
 
 
 def user_photo_path(instance, filename):
@@ -99,24 +98,21 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = [
         "name"
     ]
-    PUBLIC_SIMPLE_FIELDS = [
-        "id", "nickname", "role", "avatar",
-    ]
-    PUBLIC_FIELDS = PUBLIC_SIMPLE_FIELDS + [
-        "created", "admin"
-    ]
-    PRIVATE_SIMPLE_FIELDS = [
+    SIMPLE_FIELDS = [
         "id", "name", "nickname", "gender", "role", "avatar", "photo", "phone"
     ]
-    PRIVATE_FIELDS = PRIVATE_SIMPLE_FIELDS + [
-        # 私有数据展示给同学和老师
-        "created",
-        "name", "gender", "birthday", "photo",  # 身份信息
-        "phone", "email", "QQ", "WeChat",  # 联系方式
+    FIELDS = [
+        # 账户信息
+        "id", "nickname", "avatar", "admin",
+        # 个人基本信息
+        "name", "gender", "birthday", "photo",
+        # 身份关联
+        "role",
+        # 联系方式
+        "phone", "email", "QQ", "WeChat"
     ]
-    ALL_FIELDS = PUBLIC_FIELDS + [
-        "name", "gender", "birthday", "photo",  # 身份信息
-        "phone", "email", "QQ", "WeChat",  # 联系方式
+    FIELDS_CURRENT = FIELDS + [
+        "created",
     ]
     EDITABLE_FIELDS = [  # 在PC端设置界面可被修改的值，关于图片问题，令设api
         "nickname", "gender", "birthday", "phone", "email", "QQ", "WeChat",
@@ -127,10 +123,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         return settings.MEDIA_URL + str(self.avatar)
 
     def get_administrative_classes(self) -> QuerySet:
-        return self.classes.filter(type=account_settings.choices.class_type.ADMINISTRATIVE)
+        return self.classes.filter(type=ClassTypeChoice.ADMINISTRATIVE)
 
     def get_walking_classes(self) -> QuerySet:
-        return self.classes.filter(type=account_settings.choices.class_type.WALKING)
+        return self.classes.filter(type=ClassTypeChoice.WALKING)
 
     def get_classmates(self) -> QuerySet:
         # 该方案存在bug，只会获取一个用户
@@ -157,16 +153,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         还是不获取被编辑的班级了
         :return: 班级
         """
-        # classes = self.edited_classes.all()
-        # if self.role == UserRoleChoice.STUDENT:
-        #     classes |= self.role_student.classes.all()
-        # elif self.role == UserRoleChoice.TEACHER:
-        #     classes |= self.role_teacher.classes.all() | self.role_teacher.managed_classes.all()
-        # else:
-        #     raise ValueError(f"UserRole: {self.role} 不是正确的选项")
-        # return classes.distinct()
         if self.role is None:
-            return QuerySet(model=account_settings.models.class_)
+            from account.models import Class
+            return Class.objects.none()
         elif self.role == UserRoleChoice.STUDENT:
             return self.role_student.classes.all()
         elif self.role == UserRoleChoice.TEACHER:
@@ -206,7 +195,7 @@ class RoleStudent(Role):
     用于储存用户的身份信息
     """
     user = models.OneToOneField(User, related_name="role_student", on_delete=models.CASCADE, primary_key=True)
-    # TODO: 去向统计
+    # DONE: 去向统计
     school = models.ForeignKey('destination.School', verbose_name="学校", related_name="users",
                                on_delete=models.SET_NULL, null=True)
     campus = models.CharField(verbose_name="校区", max_length=128, null=True, blank=True)

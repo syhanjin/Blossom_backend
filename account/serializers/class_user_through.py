@@ -1,20 +1,19 @@
 # -*- coding: utf-8 -*-
 from rest_framework import serializers
 
-from account.conf import settings
-from account.models.class_ import ClassOfficer
+from account.models.class_ import ClassOfficer, ClassStudent, ClassTeacher
 
 
 class ClassStudentSimpleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_student
-        fields = settings.models.class_student.SIMPLE_FIELDS
+        model = ClassStudent
+        fields = ClassStudent.SIMPLE_FIELDS
 
 
 class ClassStudentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_student
-        fields = settings.models.class_student.ALL_FIELDS + [
+        model = ClassStudent
+        fields = ClassStudent.ALL_FIELDS + [
             "id", "name"
         ]
 
@@ -24,8 +23,8 @@ class ClassStudentSerializer(serializers.ModelSerializer):
 
 class ClassStudentSetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_student
-        fields = settings.models.class_student.EDITABLE_FIELDS
+        model = ClassStudent
+        fields = ClassStudent.EDITABLE_FIELDS
 
     position = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -36,14 +35,14 @@ class ClassStudentSetSerializer(serializers.ModelSerializer):
 
 class ClassTeacherSimpleSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_teacher
-        fields = settings.models.class_teacher.SIMPLE_FIELDS
+        model = ClassTeacher
+        fields = ClassTeacher.SIMPLE_FIELDS
 
 
 class ClassTeacherSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_teacher
-        fields = settings.models.class_teacher.ALL_FIELDS + [
+        model = ClassTeacher
+        fields = ClassTeacher.ALL_FIELDS + [
             "id", "name", "subject"
         ]
 
@@ -54,11 +53,11 @@ class ClassTeacherSerializer(serializers.ModelSerializer):
 
 class ClassTeacherSetSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_teacher
-        fields = settings.models.class_teacher.EDITABLE_FIELDS
+        model = ClassTeacher
+        fields = ClassTeacher.EDITABLE_FIELDS
 
 
 class ClassOfficerTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.class_officer
+        model = ClassOfficer
         fields = ["name", "order"]

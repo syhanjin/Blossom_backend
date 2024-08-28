@@ -246,8 +246,8 @@ default_settings = {
 DJOSER = {
     "LOGIN_FIELD": "id",
     "SERIALIZERS": {
-        "user": "account.serializers.user.UserPublicSerializer",
-        "current_user": "account.serializers.user.UserAllSerializer",
+        "user": "account.serializers.user.UserSerializer",
+        "current_user": "account.serializers.user.UserCurrentSerializer",
     },
     "PERMISSIONS": {
         "set_password": ["account.permissions.CurrentUserOrAdmin"],

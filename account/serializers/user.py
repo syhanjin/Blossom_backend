@@ -1,5 +1,19 @@
 # -*- coding: utf-8 -*-
-from typing import Any
+"""
+序列化器说明（重置版）
+* 取消公开和私有的区分，所有有访问权限的用户均能看到你的联系方式，但是去向需要处理，限制为毕业班可以看（map_activated=True）
+共有三类用户序列化器
+ - 简单序列化，用于list操作时使用
+  - 学生
+  - 老师
+  - 混合 同时包括学生和老师的字段，用于UserViewSet的list
+ - 对外序列化，用于其他用户retrieve
+  - 学生 （注意，需要依据毕业班关系决定是否包括去向信息）
+  - 老师
+ - 自身序列化，用于me
+"""
+
+from typing import Type
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -7,8 +21,9 @@ from django.core.exceptions import ValidationError
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from rest_framework import serializers
 
-from account.conf import settings
 from account.models import RoleStudent, RoleTeacher
+from account.models.choices import UserRoleChoice
+from account.serializers.class_ import ClassSimpleSerializer
 from destination.models import City, School
 
 User = get_user_model()
@@ -18,72 +33,55 @@ User = get_user_model()
 #  由于设计上不打算支持查看别的班级学生，所以区分序列化内容的Public和Private便没有必要
 #  只需要区分Simple和All来应对list模式和retrieve模式
 
+# --- BEGIN 序列化器重构 ---
 
-class RoleStudentPublicSerializer(serializers.ModelSerializer):
-    """
-    用户身份序列化器-学生-公开数据，此序列化器序列化公开的内容
-    """
-
+# Role信息序列化
+class RoleStudentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.user_role_student
-        fields = settings.models.user_role_student.PUBLIC_FIELDS
+        model = RoleStudent
+        fields = [
+            "classes",
+            "city", "school", "campus"
+        ]
 
-    classes = settings.serializers.class_public_simple(many=True)
-
-
-class RoleStudentPrivateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = settings.models.user_role_student
-        fields = settings.models.user_role_student.PRIVATE_FIELDS
-
+    classes = ClassSimpleSerializer(many=True)
     school = serializers.CharField(source="school.name", default=None)
 
+    def __init__(self, *args, **kwargs):
+        show_destination = kwargs.pop('show_destination', False)
+        super().__init__(*args, **kwargs)
+        if not show_destination:
+            self.fields.pop('school')
+            self.fields.pop('campus')
+            self.fields.pop('city')
 
-class RoleStudentAllSerializer(serializers.ModelSerializer):
-    """
-    用户身份序列化器-学生-公开数据，此序列化器序列化公开的内容
-    """
 
+class RoleTeacherSerializer(serializers.ModelSerializer):
     class Meta:
-        model = settings.models.user_role_student
-        fields = settings.models.user_role_student.ALL_FIELDS
+        model = RoleTeacher
+        fields = [
+            "classes", "managed_classes",
+            "subject"
+        ]
 
-    school = serializers.CharField(source="school.name", default=None)
-    classes = settings.serializers.class_public_simple(many=True)
-
-
-class RoleTeacherPublicSerializer(serializers.ModelSerializer):
-    """
-    用户身份序列化器-老师-公开数据，此序列化器序列化公开的内容
-    """
-
-    class Meta:
-        model = settings.models.user_role_teacher
-        fields = settings.models.user_role_teacher.PUBLIC_FIELDS
-
-    classes = settings.serializers.class_public_simple(many=True)
-    managed_classes = settings.serializers.class_public_simple(many=True)
+    classes = ClassSimpleSerializer(many=True)
+    managed_classes = ClassSimpleSerializer(many=True)
 
 
-class RoleTeacherAllSerializer(serializers.ModelSerializer):
-    """
-    用户身份序列化器-老师-公开数据，此序列化器序列化公开的内容
-    """
-
-    class Meta:
-        model = settings.models.user_role_teacher
-        fields = settings.models.user_role_teacher.ALL_FIELDS
-
-    classes = settings.serializers.class_public_simple(many=True)
-    managed_classes = settings.serializers.class_public_simple(many=True)
+# 没文化，重构版的就用Current后缀表示是当前用户
+class RoleStudentCurrentSerializer(RoleStudentSerializer):
+    def __init__(self, *args, **kwargs):
+        super(RoleStudentSerializer, self).__init__(*args, **kwargs)
 
 
-def _get_role(
-        self,
-        obj: settings.models.user_role,
-        student_model: Any = RoleStudentPublicSerializer,
-        teacher_model: Any = RoleTeacherPublicSerializer,
-):
+class RoleTeacherCurrentSerializer(RoleTeacherSerializer):
+    pass
+
+
+# 用户信息序列化
+def _get_role(self, obj: User,
+              student_model: Type[serializers.ModelSerializer],
+              teacher_model: Type[serializers.ModelSerializer]):
     """
     将Role作为字段时，使用SerializerMethodField的数据获取函数
     理论上有更优解，此处暂用该方案
@@ -92,9 +90,9 @@ def _get_role(
     # print(hasattr(obj, 'role'), RoleStudentPublicSerializer(obj.role).data)
     if not hasattr(obj, 'role_student') and not hasattr(obj, 'role_teacher'):
         return None
-    if obj.role == settings.choices.user_role.STUDENT:
+    if obj.role == UserRoleChoice.STUDENT:
         role_data = student_model(obj.role_student, context=self.context).data
-    elif obj.role == settings.choices.user_role.TEACHER:
+    elif obj.role == UserRoleChoice.TEACHER:
         role_data = teacher_model(obj.role_teacher, context=self.context).data
     else:
         raise ValueError(f"{obj.role=} 数据异常！")
@@ -103,59 +101,36 @@ def _get_role(
     return role_data
 
 
-class RoleMixin(serializers.Serializer):
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = User.FIELDS
+
     role = serializers.SerializerMethodField()
 
-    def get_role(self, obj):
-        return _get_role(self, obj)
+    def get_role(self, obj: User):
+        return _get_role(self, obj, RoleStudentSerializer, RoleTeacherSerializer)
 
 
-class UserPublicSerializer(serializers.ModelSerializer, RoleMixin):
-    """
-    用户描述序列化器，此序列化器序列化用户的公开数据
-    """
-
+class UserCurrentSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = User.PUBLIC_FIELDS
+        fields = User.FIELDS_CURRENT
+
+    role = serializers.SerializerMethodField()
+
+    def get_role(self, obj: User):
+        return _get_role(self, obj, RoleStudentCurrentSerializer, RoleTeacherCurrentSerializer)
 
 
-class UserPrivateSerializer(serializers.ModelSerializer, RoleMixin):
-    class Meta:
-        model = User
-        fields = User.PRIVATE_FIELDS
-
-    def get_role(self, obj):
-        return _get_role(
-            self,
-            obj,
-            RoleStudentPrivateSerializer,
-            RoleTeacherPublicSerializer,
-        )
-
-
-class UserAllSerializer(serializers.ModelSerializer, RoleMixin):
-    """
-    用户序列化器，此序列化器序列化用户的全部字段（不包括敏感字段）
-    """
-
-    class Meta:
-        model = User
-        fields = User.ALL_FIELDS
-
-    def get_role(self, obj):
-        return _get_role(
-            self,
-            obj,
-            RoleStudentAllSerializer,
-            RoleTeacherAllSerializer,
-        )
-
+# 用于创建和修改用户信息的序列化器
 
 class UserStudentSetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = User.EDITABLE_FIELDS + ["school", "campus", "city"]
+        fields = User.EDITABLE_FIELDS + [
+            "school", "campus", "city"
+        ]
 
     school = serializers.CharField(source="role_student.school", allow_null=True)
     campus = serializers.CharField(source="role_student.campus", allow_blank=True, allow_null=True)
@@ -248,3 +223,5 @@ class PasswordResetSerializer(serializers.Serializer):
         except ValidationError as e:
             raise serializers.ValidationError({"new_password": list(e.messages)})
         return super().validate(attrs)
+
+# --- END ---

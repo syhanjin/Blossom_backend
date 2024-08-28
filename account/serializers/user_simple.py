@@ -9,22 +9,12 @@ from rest_framework import serializers
 User = get_user_model()
 
 
-class UserPublicSimpleSerializer(serializers.ModelSerializer):
+class UserSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = User.PUBLIC_SIMPLE_FIELDS
-
-
-class UserPrivateSimpleSerializer(serializers.ModelSerializer):
-    """
-    是老师的时候科目一项需要给出
-    """
-
-    class Meta:
-        model = User
-        fields = User.PRIVATE_SIMPLE_FIELDS + [
-            'subject',
-            'school', 'campus', 'city'
+        fields = User.SIMPLE_FIELDS + [
+            "school", "campus", "city",
+            "subject"
         ]
 
     subject = serializers.CharField(source='role_teacher.subject', default=None)
@@ -35,7 +25,7 @@ class UserPrivateSimpleSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         is_teacher = kwargs.pop('is_teacher', False)
-        super(UserPrivateSimpleSerializer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if is_teacher:
             self.fields.pop('school')
             self.fields.pop('campus')
@@ -44,6 +34,6 @@ class UserPrivateSimpleSerializer(serializers.ModelSerializer):
             self.fields.pop("subject")
 
 
-class UserPrivateCompatibleSimpleSerializer(UserPrivateSimpleSerializer):
+class UserSimpleCompatibleSerializer(UserSimpleSerializer):
     def __init__(self, *args, **kwargs):
-        super(UserPrivateSimpleSerializer, self).__init__(*args, **kwargs)
+        super(UserSimpleSerializer, self).__init__(*args, **kwargs)

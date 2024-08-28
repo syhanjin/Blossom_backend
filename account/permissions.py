@@ -2,9 +2,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 
-from account.conf import settings
 from account.models import Class, ClassMembership, ClassStudent, ClassTeacher
-from account.models.choices import AdminChoice
+from account.models.choices import AdminChoice, UserRoleChoice
 
 User = get_user_model()
 
@@ -39,7 +38,7 @@ class Student(IsAuthenticated):
     def has_permission(self, request, view):
         return (
                 super(Student, self).has_permission(request, view)
-                and request.user.role.role == settings.choices.user_role.STUDENT
+                and request.user.role.role == UserRoleChoice.STUDENT
         )
 
 
@@ -47,7 +46,7 @@ class Teacher(IsAuthenticated):
     def has_permission(self, request, view):
         return (
                 super(Teacher, self).has_permission(request, view)
-                and request.user.role.role == settings.choices.user_role.TEACHER
+                and request.user.role.role == UserRoleChoice.TEACHER
         )
 
 
@@ -133,7 +132,7 @@ class ManageCurrentClass(IsAuthenticated):
             return True
         return (
                 super(ManageCurrentClass, self).has_permission(request, view)
-                and request.user.role == settings.choices.user_role.TEACHER
+                and request.user.role == UserRoleChoice.TEACHER
                 and request.user.role_teacher.managed_classes.filter(pk=obj.pk).exists()
         )
 

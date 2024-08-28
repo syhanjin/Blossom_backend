@@ -2,21 +2,22 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from account.conf import settings
 from account.models.class_ import Class, ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
+from account.serializers.class_user_through import ClassStudentSimpleSerializer, ClassTeacherSimpleSerializer
+from account.serializers.user_simple import UserSimpleSerializer
 
 User = get_user_model()
 
 
-class ClassPublicSimpleSerializer(serializers.ModelSerializer):
+class ClassSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Class
-        fields = Class.PUBLIC_SIMPLE_FIELDS
+        fields = Class.SIMPLE_FIELDS
 
     teacher_count = serializers.IntegerField(read_only=True)
     student_count = serializers.IntegerField(read_only=True)
-    headteacher = settings.serializers.user_private_simple(source="headteacher.user", is_teacher=True)
+    headteacher = UserSimpleSerializer(source="headteacher.user", is_teacher=True)
 
 
 def _get_members(role, serializer, through_serializer, **kwargs):
@@ -48,22 +49,22 @@ def _get_members(role, serializer, through_serializer, **kwargs):
     return func
 
 
-class ClassAllSerializer(serializers.ModelSerializer):
+class ClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = Class
         fields = Class.ALL_FIELDS
 
     teacher_count = serializers.IntegerField(read_only=True)
     student_count = serializers.IntegerField(read_only=True)
-    headteacher = settings.serializers.user_private_simple(source="headteacher.user", is_teacher=True)
+    headteacher = UserSimpleSerializer(source="headteacher.user", is_teacher=True)
     students = serializers.SerializerMethodField()
     teachers = serializers.SerializerMethodField()
     get_students = _get_members('students',
-                                settings.serializers.user_private_simple,
-                                settings.serializers.class_student_simple)
+                                UserSimpleSerializer,
+                                ClassStudentSimpleSerializer)
     get_teachers = _get_members('teachers',
-                                settings.serializers.user_private_simple,
-                                settings.serializers.class_teacher_simple, is_teacher=True)
+                                UserSimpleSerializer,
+                                ClassTeacherSimpleSerializer, is_teacher=True)
 
     photo_preview = serializers.ImageField()
 

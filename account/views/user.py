@@ -13,9 +13,14 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from account.conf import settings
+from account.models import ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
 from account.permissions import AdminSuper, CurrentUser, CurrentUserOrAdmin
+from account.serializers.class_user_through import ClassStudentSimpleSerializer, ClassTeacherSimpleSerializer
+from account.serializers.user import PasswordResetSerializer, UserCreateSerializer, UserCurrentSerializer, \
+    UserImagesSetSerializer, UserRoleStudentCreateSerializer, UserRoleTeacherCreateSerializer, UserSerializer, \
+    UserStudentSetSerializer, UserTeacherSetSerializer
+from account.serializers.user_simple import UserSimpleCompatibleSerializer
 
 User = get_user_model()
 
@@ -103,37 +108,37 @@ class UserViewSet(BaseUserViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             warnings.warn("必须禁止访问非同班同学！否则信息可能泄露")
-            return settings.serializers.user_private_compatible_simple
+            return UserSimpleCompatibleSerializer
         elif self.action == "create":
-            return settings.serializers.user_create
+            return UserCreateSerializer
         elif self.action == "me":
-            return settings.serializers.user_all
+            return UserCurrentSerializer
         elif self.action == "retrieve":
             obj = self.get_object()
             if self.request.user.pk == obj.pk:
-                return settings.serializers.user_all
-            return settings.serializers.user_private
+                return UserCurrentSerializer
+            return UserSerializer
         elif self.action in ["partial_update", "update"]:
             obj = self.get_object()
             if obj.role == UserRoleChoice.STUDENT:
-                return settings.serializers.user_student_set
+                return UserStudentSetSerializer
             elif obj.role == UserRoleChoice.TEACHER:
-                return settings.serializers.user_teacher_set
+                return UserTeacherSetSerializer
             raise ValueError(f"{obj.role=}")
         elif self.action in ["images", "me_images"]:
-            return settings.serializers.user_set_images
+            return UserImagesSetSerializer
         elif self.action == "role":
             role = self.request.data.get("role")
             if role is None:
                 raise ValidationError("`role` is required")
             elif role == UserRoleChoice.STUDENT:
-                return settings.serializers.user_role_student_create
+                return UserRoleStudentCreateSerializer
             elif role == UserRoleChoice.TEACHER:
-                return settings.serializers.user_role_teacher_create
+                return UserRoleTeacherCreateSerializer
             else:
                 raise ValidationError(f"{role=} 不在可选范围内")
         elif self.action == "password_reset":
-            return settings.serializers.user_password_reset
+            return PasswordResetSerializer
         raise NotImplementedError(f"Action {self.action} 未实现！")
 
     @action(["get"], detail=False)
@@ -146,16 +151,14 @@ class UserViewSet(BaseUserViewSet):
         data = self.get_serializer(user).data
         if data.get('role'):
             for i, v in enumerate(data["role"]["classes"]):
-                if user.role == settings.choices.user_role.STUDENT:
-                    data["role"]["classes"][i].update(settings.serializers.class_student_simple(
-                        settings.models.class_student.objects.get(user_role__pk=user.role_student.pk,
-                                                                  classes__pk=v["id"]),
+                if user.role == UserRoleChoice.STUDENT:
+                    data["role"]["classes"][i].update(ClassStudentSimpleSerializer(
+                        ClassStudent.objects.get(user_role__pk=user.role_student.pk, classes__pk=v["id"]),
                         context=self.get_serializer_context()
                     ).data)
-                elif user.role == settings.choices.user_role.TEACHER:
-                    data["role"]["classes"][i].update(settings.serializers.class_teacher_simple(
-                        settings.models.class_teacher.objects.get(user_role__pk=user.role_teacher.pk,
-                                                                  classes__pk=v["id"]),
+                elif user.role == UserRoleChoice.TEACHER:
+                    data["role"]["classes"][i].update(ClassTeacherSimpleSerializer(
+                        ClassTeacher.objects.get(user_role__pk=user.role_teacher.pk, classes__pk=v["id"]),
                         context=self.get_serializer_context()
                     ).data)
 

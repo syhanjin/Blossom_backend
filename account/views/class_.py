@@ -9,12 +9,14 @@ from rest_framework_nested.viewsets import NestedViewSetMixin
 from django.conf import settings as django_settings
 from django.core.cache import cache
 
-from account.conf import settings
-from account.models.class_ import Class, ClassStudent, ClassTeacher
-from account.models.choices import UserRoleChoice
+from account.models.class_ import Class, ClassOfficer, ClassStudent, ClassTeacher
+from account.models.choices import ClassTypeChoice, UserRoleChoice
 from account.permissions import AdminSuper, CurrentMemberOrAdmin, IsMapActive, ManageCurrentClassOrAdmin, \
     OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin
-from account.serializers.class_ import ClassPublicSimpleSerializer
+from account.serializers.class_ import ClassCreateSerializer, ClassPhotoSetSerializer, \
+    ClassSerializer, ClassSetSerializer, ClassSimpleSerializer, ClassStudentAddSerializer, ClassTeacherAddSerializer
+from account.serializers.class_user_through import ClassOfficerTypeSerializer, ClassStudentSerializer, \
+    ClassStudentSetSerializer, ClassTeacherSerializer, ClassTeacherSetSerializer
 
 
 class ClassViewSet(
@@ -25,7 +27,7 @@ class ClassViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
 ):
-    serializer_class = ClassPublicSimpleSerializer
+    serializer_class = ClassSimpleSerializer
     queryset = Class.objects.all()
     permission_classes = [OnCurrentClassOrAdmin]
     lookup_field = 'id'
@@ -52,23 +54,23 @@ class ClassViewSet(
 
     def get_serializer_class(self):
         if self.action == "list":
-            return settings.serializers.class_public_simple
+            return ClassSimpleSerializer
         elif self.action == "create":
-            return settings.serializers.class_create
+            return ClassCreateSerializer
         elif self.action == "retrieve":
-            return settings.serializers.class_all
+            return ClassSerializer
         elif self.action == "photo":
-            return settings.serializers.class_set_photo
+            return ClassPhotoSetSerializer
         elif self.action in ["partial_update", "update"]:
-            return settings.serializers.class_set
+            return ClassSetSerializer
         elif self.action == "members":
             role = self.request.data.get("role")
             if not role:
                 raise ValidationError("`role` is required")
             elif role == UserRoleChoice.STUDENT:
-                return settings.serializers.class_students_add
+                return ClassStudentAddSerializer
             elif role == UserRoleChoice.TEACHER:
-                return settings.serializers.class_teachers_add
+                return ClassTeacherAddSerializer
             else:
                 raise ValidationError(f"{role=} 不在可选范围内")
         raise NotImplementedError(f"Action {self.action} 未实现！")
@@ -93,13 +95,13 @@ class ClassViewSet(
         class_type = request.query_params.get("type")
         if not class_type:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": ["必须提供type"]})
-        if class_type == settings.choices.class_type.ADMINISTRATIVE:
-            objects = settings.models.class_officer.objects.filter(administrative=True)
-        elif class_type == settings.choices.class_type.WALKING:
-            objects = settings.models.class_officer.objects.filter(walking=True)
+        if class_type == ClassTypeChoice.ADMINISTRATIVE:
+            objects = ClassOfficer.objects.filter(administrative=True)
+        elif class_type == ClassTypeChoice.WALKING:
+            objects = ClassOfficer.objects.filter(walking=True)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"errors": [f"Type {class_type} 不在可选范围内"]})
-        return Response(data=settings.serializers.class_officer(objects, many=True).data)
+        return Response(data=ClassOfficerTypeSerializer(objects, many=True).data)
 
     @action(detail=True, methods=["put"])
     def photo(self, request, *args, **kwargs):
@@ -155,11 +157,11 @@ class ClassStudentViewSet(NestedViewSetMixin,
 
     def get_serializer_class(self):
         if self.action == "list":
-            return settings.serializers.class_student
+            return ClassStudentSerializer
         elif self.action == "retrieve":
-            return settings.serializers.class_student
+            return ClassStudentSerializer
         elif self.action in ["update", "partial_update"]:
-            return settings.serializers.class_student_set
+            return ClassStudentSetSerializer
 
         raise NotImplementedError(f"{self.action=} 未实现")
 
@@ -189,11 +191,11 @@ class ClassTeacherViewSet(NestedViewSetMixin,
 
     def get_serializer_class(self):
         if self.action == "list":
-            return settings.serializers.class_teacher
+            return ClassTeacherSerializer
         elif self.action == "retrieve":
-            return settings.serializers.class_teacher
+            return ClassTeacherSerializer
         elif self.action in ["update", "partial_update"]:
-            return settings.serializers.class_teacher_set
+            return ClassTeacherSetSerializer
 
         raise NotImplementedError(f"{self.action=} 未实现")
 
