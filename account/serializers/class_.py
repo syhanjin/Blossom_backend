@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from account.models.class_ import Class, ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
+from account.permissions import AccessToDestination
 from account.serializers.class_user_through import ClassStudentSimpleSerializer, ClassTeacherSimpleSerializer
 from account.serializers.user_simple import UserSimpleSerializer
 
@@ -34,6 +35,9 @@ def _get_members(role, serializer, through_serializer, **kwargs):
         ret = []
         for member in members.all():
             # 修复bug，图片路径不是url：附带context
+            if role == 'students':
+                kwargs["show_destination"] = AccessToDestination().has_object_permission(self.context["request"], self,
+                                                                                         member.user)
             data = serializer(member.user, **kwargs, context=self.context).data
             if role == 'students':
                 through = ClassStudent.objects.get(user_role=member, classes=self.instance)

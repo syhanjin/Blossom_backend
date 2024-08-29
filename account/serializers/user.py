@@ -71,6 +71,7 @@ class RoleTeacherSerializer(serializers.ModelSerializer):
 # 没文化，重构版的就用Current后缀表示是当前用户
 class RoleStudentCurrentSerializer(RoleStudentSerializer):
     def __init__(self, *args, **kwargs):
+        kwargs.pop('show_destination', False)
         super(RoleStudentSerializer, self).__init__(*args, **kwargs)
 
 
@@ -90,8 +91,9 @@ def _get_role(self, obj: User,
     # print(hasattr(obj, 'role'), RoleStudentPublicSerializer(obj.role).data)
     if not hasattr(obj, 'role_student') and not hasattr(obj, 'role_teacher'):
         return None
+    show_destination = getattr(self, 'show_destination', False)
     if obj.role == UserRoleChoice.STUDENT:
-        role_data = student_model(obj.role_student, context=self.context).data
+        role_data = student_model(obj.role_student, context=self.context, show_destination=show_destination).data
     elif obj.role == UserRoleChoice.TEACHER:
         role_data = teacher_model(obj.role_teacher, context=self.context).data
     else:
@@ -111,6 +113,10 @@ class UserSerializer(serializers.ModelSerializer):
     def get_role(self, obj: User):
         return _get_role(self, obj, RoleStudentSerializer, RoleTeacherSerializer)
 
+    def __init__(self, *args, **kwargs):
+        self.show_destination = kwargs.pop('show_destination', False)
+        super().__init__(*args, **kwargs)
+
 
 class UserCurrentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -121,6 +127,10 @@ class UserCurrentSerializer(serializers.ModelSerializer):
 
     def get_role(self, obj: User):
         return _get_role(self, obj, RoleStudentCurrentSerializer, RoleTeacherCurrentSerializer)
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop('show_destination', False)
+        super().__init__(*args, **kwargs)
 
 
 # 用于创建和修改用户信息的序列化器

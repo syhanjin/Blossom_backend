@@ -25,15 +25,20 @@ class UserSimpleSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         is_teacher = kwargs.pop('is_teacher', False)
+        show_destination = kwargs.pop('show_destination', False)
         super().__init__(*args, **kwargs)
-        if is_teacher:
+        if not show_destination or is_teacher:
             self.fields.pop('school')
             self.fields.pop('campus')
             self.fields.pop('city')
-        else:
+
+        if not is_teacher:
             self.fields.pop("subject")
 
 
 class UserSimpleCompatibleSerializer(UserSimpleSerializer):
     def __init__(self, *args, **kwargs):
         super(UserSimpleSerializer, self).__init__(*args, **kwargs)
+        self.fields.pop('school')
+        self.fields.pop('campus')
+        self.fields.pop('city')

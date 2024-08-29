@@ -126,6 +126,26 @@ class IsMapActive(OnCurrentClass):
         )
 
 
+class AccessToDestination(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        if not isinstance(obj, User):
+            return True
+        return (
+                super().has_permission(request, view)
+                and obj.role == UserRoleChoice.STUDENT
+                and (
+                        request.user.pk == obj.pk or
+                        (  # 老师可以看到学生的去向，不需要这个班级的地图功能开启
+                                request.user.role == UserRoleChoice.TEACHER
+                                and request.user.classes.all().filter(students__pk=obj.id).exists()
+                        ) or (
+                                request.user.role == UserRoleChoice.STUDENT
+                                and request.user.classes.all().filter(map_activated=True, students__pk=obj.id).exists()
+                        )
+                )
+        )
+
+
 class ManageCurrentClass(IsAuthenticated):
     def has_object_permission(self, request, view, obj):
         if not isinstance(obj, Class):

@@ -15,7 +15,7 @@ from rest_framework.response import Response
 
 from account.models import ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
-from account.permissions import AdminSuper, CurrentUser, CurrentUserOrAdmin
+from account.permissions import AccessToDestination, AdminSuper, CurrentUser, CurrentUserOrAdmin
 from account.serializers.class_user_through import ClassStudentSimpleSerializer, ClassTeacherSimpleSerializer
 from account.serializers.user import PasswordResetSerializer, UserCreateSerializer, UserCurrentSerializer, \
     UserImagesSetSerializer, UserRoleStudentCreateSerializer, UserRoleTeacherCreateSerializer, UserSerializer, \
@@ -32,7 +32,7 @@ class UserBaseFilter(BaseFilterBackend):
             class_id = request.query_params.get('cid', None)
             if class_id is not None:
                 class_id = class_id.split(',')
-                queryset = queryset.filter(
+                queryset = queryset.filter(  # TODO: 不知道有没有bug，留个锚点
                     Q(role_student__classes__id__in=class_id) | Q(role_teacher__classes__id__in=class_id)
                 )
             role = request.query_params.get('r', None)
@@ -140,6 +140,12 @@ class UserViewSet(BaseUserViewSet):
         elif self.action == "password_reset":
             return PasswordResetSerializer
         raise NotImplementedError(f"Action {self.action} 未实现！")
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        show_destination = AccessToDestination().has_object_permission(request, self, instance)
+        serializer = self.get_serializer(instance, show_destination=show_destination)
+        return Response(serializer.data)
 
     @action(["get"], detail=False)
     def me(self, request, *args, **kwargs):
