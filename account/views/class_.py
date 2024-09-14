@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import warnings
 
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -11,8 +10,8 @@ from django.core.cache import cache
 
 from account.models.class_ import Class, ClassOfficer, ClassStudent, ClassTeacher
 from account.models.choices import ClassTypeChoice, UserRoleChoice
-from account.permissions import AdminSuper, CurrentMemberOrAdmin, IsMapActive, ManageCurrentClassOrAdmin, \
-    OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin
+from account.permissions import AdminSuper, CurrentUserOrAdmin, IsHeadteacherOrEditorOrAdmin, IsMapActive, \
+    OnCurrentClassOrAdmin, OnSameClassOrAdmin
 from account.serializers.class_ import ClassCreateSerializer, ClassPhotoSetSerializer, \
     ClassSerializer, ClassSetSerializer, ClassSimpleSerializer, ClassStudentAddSerializer, ClassTeacherAddSerializer
 from account.serializers.class_user_through import ClassOfficerTypeSerializer, ClassStudentSerializer, \
@@ -37,7 +36,6 @@ class ClassViewSet(
         queryset = super().get_queryset()
         if user.admin == 0:
             # 如果不是管理员，则只能获取自己所在的班级
-            warnings.warn("暂时禁止列出自己不在的班级", Warning)
             queryset = user.classes.all() | user.edited_classes.all()
         return queryset
 
@@ -45,7 +43,7 @@ class ClassViewSet(
         # if self.action == 'list':
         #     self.permission_classes = settings.
         if self.action in ["photo", "partial_update", "update"]:
-            self.permission_classes = [ManageCurrentClassOrAdmin]
+            self.permission_classes = [IsHeadteacherOrEditorOrAdmin]
         elif self.action in ["create", "members"]:
             self.permission_classes = [AdminSuper]
         elif self.action == "map":
@@ -80,7 +78,7 @@ class ClassViewSet(
         serializer = self.get_serializer(instance)
         # 告诉前端用户是否可以编辑该班级信息
         data = serializer.data
-        data["can_edit"] = ManageCurrentClassOrAdmin().has_object_permission(request, self, instance)
+        data["can_edit"] = IsHeadteacherOrEditorOrAdmin().has_object_permission(request, self, instance)
         return Response(data)
 
     def update(self, request, *args, **kwargs):
@@ -153,7 +151,7 @@ class ClassStudentViewSet(NestedViewSetMixin,
     parent_lookup_kwargs = {"class_id": "classes__id"}
     lookup_field = 'user_role__user__id'
     queryset = ClassStudent.objects.all()
-    permission_classes = [OnCurrentClassOrAdmin]
+    permission_classes = [OnSameClassOrAdmin]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -167,9 +165,9 @@ class ClassStudentViewSet(NestedViewSetMixin,
 
     def get_permissions(self):
         if self.action == "retrieve":
-            self.permission_classes = [OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin]
+            self.permission_classes = [OnSameClassOrAdmin]
         elif self.action in ["update", "partial_update"]:
-            self.permission_classes = [CurrentMemberOrAdmin]
+            self.permission_classes = [CurrentUserOrAdmin]
 
         return super().get_permissions()
 
@@ -187,7 +185,7 @@ class ClassTeacherViewSet(NestedViewSetMixin,
     parent_lookup_kwargs = {"class_id": "classes__id"}
     lookup_field = 'user_role__user__id'
     queryset = ClassTeacher.objects.all()
-    permission_classes = [OnCurrentClassOrAdmin]
+    permission_classes = [OnSameClassOrAdmin]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -201,9 +199,9 @@ class ClassTeacherViewSet(NestedViewSetMixin,
 
     def get_permissions(self):
         if self.action == "retrieve":
-            self.permission_classes = [OnCurrentClassOrAdmin, OnSameClassWithClassMembershipOrAdmin]
+            self.permission_classes = [OnSameClassOrAdmin]
         elif self.action in ["update", "partial_update"]:
-            self.permission_classes = [CurrentMemberOrAdmin]
+            self.permission_classes = [CurrentUserOrAdmin]
 
         return super().get_permissions()
 

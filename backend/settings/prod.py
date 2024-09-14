@@ -252,7 +252,7 @@ DJOSER = {
     "PERMISSIONS": {
         "set_password": ["account.permissions.CurrentUserOrAdmin"],
         "set_username": ["account.permissions.CurrentUserOrAdmin"],
-        "user_delete": ["account.permissions.CurrentUserOrAdmin"],
+        "user_delete": ["account.permissions.AdminSuper"],
         "user_create": ["account.permissions.AdminSuper"],
         # "user": ["account.permissions.CurrentUserOrAdmin"],
         # 此处只需要验证同一班级即可，因为会使用不同的序列化器，其次就是me只会获取自己的信息

@@ -15,7 +15,7 @@ from rest_framework.response import Response
 
 from account.models import ClassStudent, ClassTeacher
 from account.models.choices import UserRoleChoice
-from account.permissions import AccessToDestination, AdminSuper, CurrentUser, CurrentUserOrAdmin
+from account.permissions import AccessToDestination, AdminSuper, CurrentUserOrAdmin, OnSameClassOrAdmin
 from account.serializers.class_user_through import ClassStudentSimpleSerializer, ClassTeacherSimpleSerializer
 from account.serializers.user import PasswordResetSerializer, UserCreateSerializer, UserCurrentSerializer, \
     UserImagesSetSerializer, UserRoleStudentCreateSerializer, UserRoleTeacherCreateSerializer, UserSerializer, \
@@ -70,12 +70,6 @@ class UserViewSet(BaseUserViewSet):
     ordering_fields = ["name"]
 
     def permission_denied(self, request, **kwargs):
-        # if (
-        #     settings.HIDE_USERS
-        #     and request.user.is_authenticated
-        #     and self.action in ["update", "partial_update", "list", "retrieve"]
-        # ):
-        #     raise NotFound()
         super(BaseUserViewSet, self).permission_denied(request, **kwargs)
 
     def get_queryset(self):
@@ -90,10 +84,8 @@ class UserViewSet(BaseUserViewSet):
         return queryset
 
     def get_permissions(self):
-        # if self.action == 'list':
-        #     self.permission_classes = settings.
-        # if self.action == 'me':
-        #     self.permission_classes = [CurrentUserOrAdmin]
+        if self.action in ["list", "retrieve"]:
+            self.permission_classes = [OnSameClassOrAdmin]
         if self.action in ["partial_update", "images", "me_images", "update"]:
             self.permission_classes = [CurrentUserOrAdmin]
         elif self.action in ["role"]:
@@ -101,8 +93,7 @@ class UserViewSet(BaseUserViewSet):
         elif self.action == "has_nickname":
             self.permission_classes = [IsAuthenticated]
         elif self.action == "password_reset":
-            self.permission_classes = [CurrentUser]
-
+            self.permission_classes = [CurrentUserOrAdmin]
         return super(BaseUserViewSet, self).get_permissions()
 
     def get_serializer_class(self):
